@@ -44,7 +44,43 @@ impl CPU {
     }
 
     fn exectute(&mut self, instruction: Instruction) -> Option<Interrupt> {
-        None
+        match instruction {
+            Instruction::Nop => None,
+            Instruction::Cls => Some(clear_screen()),
+            Instruction::Ret => {
+                self.pc = self.stack.pop().unwrap_or(0);
+                None
+            }
+            Instruction::Jmp(nnn) => {
+                self.pc = nnn;
+                None
+            }
+            Instruction::Call(nnn) => {
+                self.stack.push(self.pc);
+                self.pc = nnn;
+                None
+            }
+            Instruction::Ldr(x, kk) => {
+                self.registers[x as usize] = kk;
+                None
+            }
+            Instruction::Add(x, kk) => {
+                self.registers[x as usize] += kk;
+                None
+            }
+            Instruction::Ldi(nnn) => {
+                self.index = nnn;
+                None
+            }
+            Instruction::Draw(x, y, n) => {
+                let range = (self.index as usize)..((self.index + n as u16) as usize);
+                let sprite = &self.memory[range];
+                let x = self.registers[x as usize] & 63;
+                let y = self.registers[y as usize] & 31;
+                self.registers[0xf] = 0;
+                Some(draw(sprite, (x, y)))
+            }
+        }
     }
 
     pub fn step(&mut self) -> Option<Interrupt> {
@@ -57,6 +93,9 @@ impl CPU {
 
 //generate an interrupt to clear screen
 fn clear_screen() -> Interrupt {
+    Interrupt::DisplayUpdate(Vec::new())
+}
+fn draw(sprite: &[u8], coords: (u8, u8)) -> Interrupt {
     Interrupt::DisplayUpdate(Vec::new())
 }
 
