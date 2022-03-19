@@ -2,6 +2,8 @@ mod font;
 mod instruction;
 mod test;
 
+use std::time::{Duration, Instant};
+
 use anyhow::Result;
 
 use instruction::{decode, Instruction};
@@ -14,17 +16,24 @@ pub struct CPU {
     delay: u8,
     sound: u8,
     registers: [u8; 16],
-    speed: u32,
+    speed_ns: Duration,
 }
 
 impl crate::vm::Chip8Cpu for CPU {
     //this should execute in the time 1/speed
     fn step(&mut self, display: &mut [[u8; 64]; 32], keys: &[bool; 16]) {
+        let start = Instant::now();
         let opcode = self.fetch();
         let instruction = decode(opcode);
 
         dbg!(&instruction);
+        dbg!(&self.pc);
         self.exectute(instruction, display, keys);
+        if let Some(sleep_time) = self.speed_ns.checked_sub(start.elapsed()) {
+            dbg!(sleep_time);
+
+            std::thread::sleep(sleep_time)
+        }
     }
 }
 
@@ -43,7 +52,7 @@ impl CPU {
             sound: 0,
             stack: Vec::new(),
             registers: [0; 16],
-            speed,
+            speed_ns: Duration::from_secs_f64(1_f64 / speed as f64),
         }
     }
 
@@ -54,9 +63,10 @@ impl CPU {
     }
 
     fn fetch(&mut self) -> u16 {
-        let mut instruction: u16 = 0;
-        instruction &= (self.memory[self.pc as usize] as u16) << 8;
-        instruction &= self.memory[(self.pc + 1) as usize] as u16;
+        let instruction = u16::from_be_bytes([
+            self.memory[self.pc as usize],
+            self.memory[(self.pc + 1) as usize],
+        ]);
         self.pc += 2;
         //wrapping
         if self.pc >= 4096 {
@@ -102,14 +112,14 @@ impl CPU {
 
                 for row in sprite {
                     for sprite_px in PixIterator::new(row) {
-                        let display_px = display[x as usize][y as usize];
-
+                        let display_px = display[y as usize][x as usize];
+                        dbg!(display_px, sprite_px, x, y);
                         //set vf on collide
                         if display_px == 1 && sprite_px == 1 {
                             self.registers[0xf] = 1;
                         }
                         //xor onto display
-                        display[x as usize][y as usize] ^= sprite_px;
+                        display[y as usize][x as usize] ^= sprite_px;
 
                         //are we at the right edge of the screen?
                         if x == 63 {

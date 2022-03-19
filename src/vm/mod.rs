@@ -52,8 +52,8 @@ impl<C: Chip8Cpu> Chip8VM<C> {
                     *control_flow = ControlFlow::Exit;
                     return;
                 }
+                display::update(&mut pixels, &self.display)
             }
-
             // Handle input events
             if input.update(&event) {
                 // Close events

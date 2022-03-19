@@ -1,3 +1,5 @@
+use std::io::Write;
+
 use pixels::{Pixels, SurfaceTexture};
 use winit::dpi::LogicalSize;
 use winit::event_loop::EventLoop;
@@ -25,4 +27,11 @@ pub fn init() -> Option<(EventLoop<()>, Window, Pixels)> {
         Pixels::new(size.0, size.1, surface_texture).ok()?
     };
     Some((event_loop, window, pixels))
+}
+
+pub fn update(pixels: &mut Pixels, buffer: &[[u8; 64]; 32]) {
+    pixels
+        .get_frame()
+        .write_all(&buffer.concat())
+        .expect("Could not update Pixels buffer");
 }

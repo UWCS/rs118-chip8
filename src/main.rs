@@ -7,9 +7,4 @@ fn main() -> anyhow::Result<()> {
     chip8.run();
 }
 
-// pub fn update(pixels: &mut Pixels, buffer: [[u8; 64]; 32]) {
-//     pixels
-//         .get_frame()
-//         .write_all(&buffer.concat())
-//         .expect("Could not update Pixels buffer");
-// }
+
