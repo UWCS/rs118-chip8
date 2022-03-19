@@ -2,7 +2,8 @@ mod font;
 mod instruction;
 mod test;
 
-use crate::vm;
+use anyhow::Result;
+
 use instruction::{decode, Instruction};
 
 pub struct CPU {
@@ -17,6 +18,7 @@ pub struct CPU {
 }
 
 impl crate::vm::Chip8Cpu for CPU {
+    //this should execute in the time 1/speed
     fn step(&mut self, display: &mut [[u8; 64]; 32], keys: &[bool; 16]) {
         let opcode = self.fetch();
         let instruction = decode(opcode);
@@ -24,18 +26,16 @@ impl crate::vm::Chip8Cpu for CPU {
         dbg!(&instruction);
         self.exectute(instruction, display, keys);
     }
+}
 
-    fn init(filename: &str, speed: u32) -> anyhow::Result<Self> {
+impl CPU {
+    pub fn new(speed: u32) -> Self {
         let mut memory = [0_u8; 4096];
 
         //font is 80 bytes, should lie at 0x50
         memory[0x50..0xA0].copy_from_slice(&font::FONT);
 
-        //program should start at 0x200
-        let program = std::fs::read(filename)?;
-        memory[0x200..(0x200 + program.len())].copy_from_slice(&program);
-
-        Ok(CPU {
+        CPU {
             memory: [0; 4096],
             pc: 0x200,
             index: 0,
@@ -44,11 +44,15 @@ impl crate::vm::Chip8Cpu for CPU {
             stack: Vec::new(),
             registers: [0; 16],
             speed,
-        })
+        }
     }
-}
 
-impl CPU {
+    pub fn load(mut self, filename: &str) -> Result<Self> {
+        let program = std::fs::read(filename)?;
+        self.memory[0x200..(0x200 + program.len())].copy_from_slice(&program);
+        Ok(self)
+    }
+
     fn fetch(&mut self) -> u16 {
         let mut instruction: u16 = 0;
         instruction &= (self.memory[self.pc as usize] as u16) << 8;
