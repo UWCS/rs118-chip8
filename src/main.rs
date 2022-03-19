@@ -10,7 +10,7 @@ use winit_input_helper::WinitInputHelper;
 
 use anyhow::Result;
 
-mod cpu;
+pub mod cpu;
 mod vm;
 
 fn main() -> Result<()> {

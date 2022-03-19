@@ -2,7 +2,9 @@ mod font;
 mod instruction;
 mod test;
 
+use crate::vm;
 use instruction::{decode, Instruction};
+
 pub struct CPU {
     memory: [u8; 4096],
     pc: u16,
@@ -11,19 +13,29 @@ pub struct CPU {
     delay: u8,
     sound: u8,
     registers: [u8; 16],
+    speed: u32,
 }
 
-pub enum Interrupt {
-    DisplayUpdate([[u8; 64]; 32]),
-}
+impl crate::vm::Chip8Cpu for CPU {
+    fn step(&mut self, display: &mut [[u8; 64]; 32], keys: &[bool; 16]) {
+        let opcode = self.fetch();
+        let instruction = decode(opcode);
 
-impl CPU {
-    pub fn init() -> Self {
+        dbg!(&instruction);
+        self.exectute(instruction, display, keys);
+    }
+
+    fn init(filename: &str, speed: u32) -> anyhow::Result<Self> {
         let mut memory = [0_u8; 4096];
+
         //font is 80 bytes, should lie at 0x50
         memory[0x50..0xA0].copy_from_slice(&font::FONT);
 
-        CPU {
+        //program should start at 0x200
+        let program = std::fs::read(filename)?;
+        memory[0x200..(0x200 + program.len())].copy_from_slice(&program);
+
+        Ok(CPU {
             memory: [0; 4096],
             pc: 0x200,
             index: 0,
@@ -31,15 +43,12 @@ impl CPU {
             sound: 0,
             stack: Vec::new(),
             registers: [0; 16],
-        }
+            speed,
+        })
     }
+}
 
-    pub fn load(&mut self, name: &str) -> anyhow::Result<()> {
-        let program = std::fs::read(name)?;
-        self.memory[0x200..(0x200 + program.len())].copy_from_slice(&program);
-        Ok(())
-    }
-
+impl CPU {
     fn fetch(&mut self) -> u16 {
         let mut instruction: u16 = 0;
         instruction &= (self.memory[self.pc as usize] as u16) << 8;
@@ -52,34 +61,33 @@ impl CPU {
         instruction
     }
 
-    fn exectute(&mut self, instruction: Instruction) -> Option<Interrupt> {
+    fn exectute(
+        &mut self,
+        instruction: Instruction,
+        display: &mut [[u8; 64]; 32],
+        keys: &[bool; 16],
+    ) {
         match instruction {
-            Instruction::Nop => None,
-            Instruction::Cls => Some(Interrupt::DisplayUpdate([[0; 64]; 32])),
+            Instruction::Nop => (),
+            Instruction::Cls => (),
             Instruction::Rts => {
                 self.pc = self.stack.pop().unwrap_or(0);
-                None
             }
             Instruction::Jmp(nnn) => {
                 self.pc = nnn;
-                None
             }
             Instruction::Call(nnn) => {
                 self.stack.push(self.pc);
                 self.pc = nnn;
-                None
             }
-            Instruction::Ldr(x, kk) => {
+            Instruction::Loadr(x, kk) => {
                 self.registers[x as usize] = kk;
-                None
             }
             Instruction::Add(x, kk) => {
                 self.registers[x as usize] += kk;
-                None
             }
-            Instruction::Ldi(nnn) => {
+            Instruction::Loadi(nnn) => {
                 self.index = nnn;
-                None
             }
             Instruction::Draw(x, y, n) => {
                 let range = (self.index as usize)..((self.index + n as u16) as usize);
@@ -90,14 +98,14 @@ impl CPU {
 
                 for row in sprite {
                     for sprite_px in PixIterator::new(row) {
-                        let display_px = self.display[x as usize][y as usize];
+                        let display_px = display[x as usize][y as usize];
 
                         //set vf on collide
                         if display_px == 1 && sprite_px == 1 {
                             self.registers[0xf] = 1;
                         }
                         //xor onto display
-                        self.display[x as usize][y as usize] ^= sprite_px;
+                        display[x as usize][y as usize] ^= sprite_px;
 
                         //are we at the right edge of the screen?
                         if x == 63 {
@@ -113,17 +121,34 @@ impl CPU {
                         y += 1;
                     }
                 }
-                Some(Interrupt::DisplayUpdate(self.display))
             }
+            Instruction::Ske(_, _) => todo!(),
+            Instruction::Skne(_, _) => todo!(),
+            Instruction::Skre(_, _) => todo!(),
+            Instruction::Move(_, _) => todo!(),
+            Instruction::Or(_, _) => todo!(),
+            Instruction::And(_, _) => todo!(),
+            Instruction::Xor(_, _) => todo!(),
+            Instruction::Addr(_, _) => todo!(),
+            Instruction::Sub(_, _) => todo!(),
+            Instruction::Shr(_, _) => todo!(),
+            Instruction::Ssub(_, _) => todo!(),
+            Instruction::Shl(_, _) => todo!(),
+            Instruction::Skrne(_, _) => todo!(),
+            Instruction::Jumpi(_) => todo!(),
+            Instruction::Rand(_, _) => todo!(),
+            Instruction::Skp(_) => todo!(),
+            Instruction::Sknp(_) => todo!(),
+            Instruction::Moved(_) => todo!(),
+            Instruction::Key(_) => todo!(),
+            Instruction::Loadd(_) => todo!(),
+            Instruction::Loads(_) => todo!(),
+            Instruction::Addi(_) => todo!(),
+            Instruction::Ldfnt(_) => todo!(),
+            Instruction::Bcd(_) => todo!(),
+            Instruction::Store(_) => todo!(),
+            Instruction::Load(_) => todo!(),
         }
-    }
-
-    pub fn tick(&mut self) -> Option<Interrupt> {
-        let opcode = self.fetch();
-        let instruction = decode(opcode);
-
-        dbg!(&instruction);
-        self.exectute(instruction)
     }
 }
 //helpers here
