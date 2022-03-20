@@ -1,4 +1,5 @@
 use std::io::Write;
+use std::time::Duration;
 
 use pixels::{Pixels, SurfaceTexture};
 use winit::dpi::LogicalSize;

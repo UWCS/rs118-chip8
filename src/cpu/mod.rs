@@ -8,6 +8,8 @@ use anyhow::Result;
 
 use instruction::{decode, Instruction};
 
+use crate::vm::{Display, Keys};
+
 pub struct CPU {
     memory: [u8; 4096],
     pc: u16,
@@ -21,7 +23,7 @@ pub struct CPU {
 
 impl crate::vm::Chip8Cpu for CPU {
     //this should execute in the time 1/speed
-    fn step(&mut self, display: &mut [[u8; 64]; 32], keys: &[bool; 16]) {
+    fn step(&mut self, display: &mut Display, keys: &Keys) {
         let start = Instant::now();
         let opcode = self.fetch();
         let instruction = decode(opcode);
@@ -30,8 +32,6 @@ impl crate::vm::Chip8Cpu for CPU {
         dbg!(&self.pc);
         self.exectute(instruction, display, keys);
         if let Some(sleep_time) = self.speed_ns.checked_sub(start.elapsed()) {
-            dbg!(sleep_time);
-
             std::thread::sleep(sleep_time)
         }
     }
@@ -75,12 +75,7 @@ impl CPU {
         instruction
     }
 
-    fn exectute(
-        &mut self,
-        instruction: Instruction,
-        display: &mut [[u8; 64]; 32],
-        keys: &[bool; 16],
-    ) {
+    fn exectute(&mut self, instruction: Instruction, display: &mut Display, keys: &Keys) {
         match instruction {
             Instruction::Nop => (),
             Instruction::Cls => (),
@@ -110,16 +105,17 @@ impl CPU {
                 let mut y = self.registers[y as usize] & 31;
                 self.registers[0xf] = 0;
 
+                let mut display_buffer = display.get_buffer();
                 for row in sprite {
                     for sprite_px in PixIterator::new(row) {
-                        let display_px = display[y as usize][x as usize];
+                        let display_px = display_buffer[y as usize][x as usize];
                         dbg!(display_px, sprite_px, x, y);
                         //set vf on collide
                         if display_px == 1 && sprite_px == 1 {
                             self.registers[0xf] = 1;
                         }
                         //xor onto display
-                        display[y as usize][x as usize] ^= sprite_px;
+                        display_buffer[y as usize][x as usize] ^= sprite_px;
 
                         //are we at the right edge of the screen?
                         if x == 63 {
@@ -135,6 +131,7 @@ impl CPU {
                         y += 1;
                     }
                 }
+                display.write_buffer(&display_buffer);
             }
             Instruction::Ske(_, _) => todo!(),
             Instruction::Skne(_, _) => todo!(),
