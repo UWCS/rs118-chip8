@@ -18,22 +18,22 @@ pub struct Cpu {
     delay: u8,
     sound: u8,
     registers: [u8; 16],
-    speed_ns: Duration,
+    speed: Duration,
 }
 
 impl crate::vm::Chip8Cpu for Cpu {
     //this should execute in the time 1/speed
     fn step(&mut self, display: &mut Display, keys: &Keys) {
-        let start = Instant::now();
         let opcode = self.fetch();
         let instruction = decode(opcode);
 
         dbg!(&instruction);
         dbg!(&self.pc);
         self.exectute(instruction, display, keys);
-        if let Some(sleep_time) = self.speed_ns.checked_sub(start.elapsed()) {
-            std::thread::sleep(sleep_time)
-        }
+    }
+
+    fn speed(&self) -> Duration {
+        self.speed
     }
 }
 
@@ -52,7 +52,7 @@ impl Cpu {
             sound: 0,
             stack: Vec::new(),
             registers: [0; 16],
-            speed_ns: Duration::from_secs_f64(1_f64 / speed as f64),
+            speed: Duration::from_secs_f64(1_f64 / speed as f64),
         }
     }
 

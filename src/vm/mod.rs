@@ -1,3 +1,5 @@
+use std::time::{Duration, Instant};
+
 use winit::event::{Event, VirtualKeyCode};
 use winit::event_loop::ControlFlow;
 use winit_input_helper::WinitInputHelper;
@@ -8,6 +10,7 @@ pub type Keys = [bool; 16];
 
 pub trait Chip8Cpu: Sized + 'static {
     fn step(&mut self, display: &mut Display, keys: &Keys);
+    fn speed(&self) -> Duration;
 }
 
 pub struct Chip8VM<C> {
@@ -32,6 +35,9 @@ impl<C: Chip8Cpu> Chip8VM<C> {
         let mut input = WinitInputHelper::new();
 
         event_loop.run(move |event, _, control_flow| {
+            let t0 = Instant::now();
+            *control_flow = winit::event_loop::ControlFlow::WaitUntil(t0 + self.cpu.speed());
+
             // Draw the current frame
             if let Event::RedrawRequested(_) = event {
                 if pixels.render().is_err() {
