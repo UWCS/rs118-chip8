@@ -1,7 +1,7 @@
 use super::{eightbit, nibbles, twelvebit};
 
-pub type Reg = u8;
-pub type Addr = u16;
+type Reg = u8;
+type Addr = u16;
 #[derive(Debug)]
 pub enum Instruction {
     Nop,                //0nnn, sys instruction on original machines but not used anymore

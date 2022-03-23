@@ -1,33 +1,16 @@
-use std::sync::{mpsc, Arc, RwLock};
-use std::thread;
-use std::time::{Duration, Instant};
 use winit::event::{Event, VirtualKeyCode};
 use winit::event_loop::ControlFlow;
 use winit_input_helper::WinitInputHelper;
 mod display;
 
-#[derive(Clone)]
-pub struct Display(Arc<RwLock<[[u8; 64]; 32]>>);
+pub type Display = [[u8; 64]; 32];
+pub type Keys = [bool; 16];
 
-impl Display {
-    pub fn get_buffer(&self) -> [[u8; 64]; 32] {
-        *self.0.read().unwrap()
-    }
-
-    pub fn write_buffer(&self, new_buf: &[[u8; 64]; 32]) {
-        let mut buf: [[u8; 64]; 32] = *self.0.write().unwrap();
-        &mut buf.copy_from_slice(new_buf);
-    }
-}
-
-#[derive(Clone)]
-pub struct Keys(Arc<RwLock<[bool; 16]>>);
-
-pub trait Chip8Cpu: Sized + Send + 'static {
+pub trait Chip8Cpu: Sized + 'static {
     fn step(&mut self, display: &mut Display, keys: &Keys);
 }
 
-pub struct Chip8VM<C: Chip8Cpu> {
+pub struct Chip8VM<C> {
     cpu: C,
     display: Display,
     keys: Keys,
@@ -37,8 +20,8 @@ impl<C: Chip8Cpu> Chip8VM<C> {
     pub fn new(cpu: C) -> Self {
         Chip8VM {
             cpu,
-            display: Display(Arc::new(RwLock::new([[0; 64]; 32]))),
-            keys: Keys(Arc::new(RwLock::new([false; 16]))),
+            display: [[0; 64]; 32],
+            keys: [false; 16],
         }
     }
 
@@ -48,23 +31,6 @@ impl<C: Chip8Cpu> Chip8VM<C> {
 
         let mut input = WinitInputHelper::new();
 
-        let (tx, rx) = mpsc::channel();
-        let mut tx = Some(tx);
-
-        //start our CPU thread
-        {
-            let mut display = self.display.clone();
-            let keys = self.keys.clone();
-            thread::spawn(move || {
-                let _ = rx.recv().unwrap(); //will block until read
-                loop {
-                    self.cpu.step(&mut display, &keys);
-                }
-            });
-        }
-
-        let display = self.display.clone();
-        let keys = self.keys.clone();
         event_loop.run(move |event, _, control_flow| {
             // Draw the current frame
             if let Event::RedrawRequested(_) = event {
@@ -72,7 +38,7 @@ impl<C: Chip8Cpu> Chip8VM<C> {
                     *control_flow = ControlFlow::Exit;
                     return;
                 }
-                display::update(&mut pixels, &display.get_buffer());
+                display::update(&mut pixels, &self.display);
             }
             // Handle input events
             if input.update(&event) {
@@ -87,13 +53,10 @@ impl<C: Chip8Cpu> Chip8VM<C> {
                     pixels.resize_surface(size.width, size.height);
                 }
             }
+            //cpu step
+            self.cpu.step(&mut self.display, &self.keys);
             // request a redraw at the end of each loop
             window.request_redraw();
-
-            //at the end of the first iteration, start our CPU
-            if let Some(tx) = tx.take() {
-                tx.send(()).unwrap()
-            }
         });
     }
 }

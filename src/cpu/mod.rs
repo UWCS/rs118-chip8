@@ -10,7 +10,7 @@ use instruction::{decode, Instruction};
 
 use crate::vm::{Display, Keys};
 
-pub struct CPU {
+pub struct Cpu {
     memory: [u8; 4096],
     pc: u16,
     index: u16,
@@ -21,7 +21,7 @@ pub struct CPU {
     speed_ns: Duration,
 }
 
-impl crate::vm::Chip8Cpu for CPU {
+impl crate::vm::Chip8Cpu for Cpu {
     //this should execute in the time 1/speed
     fn step(&mut self, display: &mut Display, keys: &Keys) {
         let start = Instant::now();
@@ -37,14 +37,14 @@ impl crate::vm::Chip8Cpu for CPU {
     }
 }
 
-impl CPU {
+impl Cpu {
     pub fn new(speed: u32) -> Self {
         let mut memory = [0_u8; 4096];
 
         //font is 80 bytes, should lie at 0x50
         memory[0x50..0xA0].copy_from_slice(&font::FONT);
 
-        CPU {
+        Cpu {
             memory: [0; 4096],
             pc: 0x200,
             index: 0,
@@ -105,17 +105,16 @@ impl CPU {
                 let mut y = self.registers[y as usize] & 31;
                 self.registers[0xf] = 0;
 
-                let mut display_buffer = display.get_buffer();
                 for row in sprite {
                     for sprite_px in PixIterator::new(row) {
-                        let display_px = display_buffer[y as usize][x as usize];
+                        let display_px = display[y as usize][x as usize];
                         dbg!(display_px, sprite_px, x, y);
                         //set vf on collide
                         if display_px == 1 && sprite_px == 1 {
                             self.registers[0xf] = 1;
                         }
                         //xor onto display
-                        display_buffer[y as usize][x as usize] ^= sprite_px;
+                        display[y as usize][x as usize] ^= sprite_px;
 
                         //are we at the right edge of the screen?
                         if x == 63 {
@@ -131,7 +130,6 @@ impl CPU {
                         y += 1;
                     }
                 }
-                display.write_buffer(&display_buffer);
             }
             Instruction::Ske(_, _) => todo!(),
             Instruction::Skne(_, _) => todo!(),

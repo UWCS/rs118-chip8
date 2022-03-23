@@ -1,5 +1,4 @@
 use std::io::Write;
-use std::time::Duration;
 
 use pixels::{Pixels, SurfaceTexture};
 use winit::dpi::LogicalSize;
@@ -22,17 +21,23 @@ pub fn init() -> Option<(EventLoop<()>, Window, Pixels)> {
     };
 
     //initialise our Pixels
-    let mut pixels = {
+    let pixels = {
         let window_size = window.inner_size();
         let surface_texture = SurfaceTexture::new(window_size.width, window_size.height, &window);
-        Pixels::new(size.0, size.1, surface_texture).ok()?
+        Pixels::new(64, 32, surface_texture).ok()?
     };
     Some((event_loop, window, pixels))
 }
 
 pub fn update(pixels: &mut Pixels, buffer: &[[u8; 64]; 32]) {
-    pixels
-        .get_frame()
-        .write_all(&buffer.concat())
-        .expect("Could not update Pixels buffer");
+    let mut old_buf = pixels.get_frame();
+    for px in buffer.concat() {
+        old_buf
+            .write_all(match px {
+                0 => &[0_u8, 0_u8, 0_u8, 255_u8],
+                1 => &[255_u8, 255_u8, 255_u8, 255_u8],
+                _ => unreachable!(),
+            })
+            .expect("Could not update Pixels buffer");
+    }
 }
