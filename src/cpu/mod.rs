@@ -2,13 +2,10 @@ mod font;
 mod instruction;
 mod test;
 
-use std::time::{Duration, Instant};
-
-use anyhow::Result;
-
-use instruction::{decode, Instruction};
-
 use crate::vm::{Display, Keys};
+use anyhow::Result;
+use instruction::{decode, Instruction};
+use std::time::Duration;
 
 pub struct Cpu {
     memory: [u8; 4096],
@@ -28,7 +25,6 @@ impl crate::vm::Chip8Cpu for Cpu {
         let instruction = decode(opcode);
 
         dbg!(&instruction);
-        dbg!(&self.pc);
         self.exectute(instruction, display, keys);
     }
 
@@ -101,33 +97,29 @@ impl Cpu {
             Instruction::Draw(x, y, n) => {
                 let range = (self.index as usize)..((self.index + n as u16) as usize);
                 let sprite = &self.memory[range];
-                let mut x = self.registers[x as usize] & 63;
-                let mut y = self.registers[y as usize] & 31;
+                let x = self.registers[x as usize] & 63;
+                let y = self.registers[y as usize] & 31;
                 self.registers[0xf] = 0;
-
-                for row in sprite {
-                    for sprite_px in PixIterator::new(row) {
-                        let display_px = display[y as usize][x as usize];
+                dbg!(&sprite);
+                for (i, row) in sprite.iter().enumerate() {
+                    for (j, sprite_px) in (0..8).zip(PixIterator::new(row)) {
+                        let display_px = display[y as usize + i][x as usize + j];
                         dbg!(display_px, sprite_px, x, y);
                         //set vf on collide
                         if display_px == 1 && sprite_px == 1 {
                             self.registers[0xf] = 1;
                         }
                         //xor onto display
-                        display[y as usize][x as usize] ^= sprite_px;
+                        display[y as usize + i][x as usize + j] ^= sprite_px;
 
                         //are we at the right edge of the screen?
                         if x == 63 {
                             break;
-                        } else {
-                            x += 1;
                         }
                     }
                     // are we at the bottom of the screen?
                     if y == 31 {
                         break;
-                    } else {
-                        y += 1;
                     }
                 }
             }

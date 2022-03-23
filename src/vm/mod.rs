@@ -36,7 +36,7 @@ impl<C: Chip8Cpu> Chip8VM<C> {
 
         event_loop.run(move |event, _, control_flow| {
             let t0 = Instant::now();
-            *control_flow = winit::event_loop::ControlFlow::WaitUntil(t0 + self.cpu.speed());
+            *control_flow = ControlFlow::WaitUntil(t0 + self.cpu.speed());
 
             // Draw the current frame
             if let Event::RedrawRequested(_) = event {
