@@ -1,11 +1,9 @@
 mod cpu;
-mod interpreter;
+mod cpu_impl;
 
-use anyhow::Context;
-
-fn main() -> anyhow::Result<()> {
-    let cpu = cpu::Cpu::new(500)
+fn main() {
+    let cpu = cpu_impl::Cpu::new(500)
         .load("roms/chip8-test-rom-with-audio.ch8")
-        .context("Could not load ROM!")?;
-    interpreter::Cpu::run(cpu);
+        .expect("Could not load ROM");
+    cpu::Cpu::run(cpu);
 }

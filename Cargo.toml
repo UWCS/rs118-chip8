@@ -2,15 +2,23 @@
 name = "chip-8"
 version = "0.1.0"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+authors = ["Joey Harrison <Joeyh021@icloud.com>"]
+readme = "README.md"
+license = "MIT"
+description = "A CHIP-8 Emulator, along with a trait for building one yourself!"
 
 [dependencies]
-env_logger = "0.9"
-log = "0.4"
 pixels = "0.9.0"
 winit = "0.26"
 winit_input_helper = "0.11"
 anyhow = "1.0"
 rand = "0.8.5"
 crossbeam = "0.8.1"
+
+[lib]
+name = "chip8_base"
+path = "src/lib.rs"
+
+[[bin]]
+name = "chip8"
+path = "src/main.rs"
