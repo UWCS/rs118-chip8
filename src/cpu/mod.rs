@@ -6,7 +6,6 @@ use crate::vm::{Display, Keys};
 use anyhow::Result;
 use instruction::{decode, Instruction};
 use rand::random;
-use std::num::Wrapping;
 use std::time::Duration;
 pub struct Cpu {
     memory: [u8; 4096],
@@ -25,7 +24,6 @@ impl crate::vm::Chip8Cpu for Cpu {
         let opcode = self.fetch();
         let instruction = decode(opcode);
 
-        dbg!(&instruction);
         self.exectute(instruction, display, keys);
     }
 
@@ -37,9 +35,9 @@ impl crate::vm::Chip8Cpu for Cpu {
 impl Cpu {
     pub fn new(speed: u32) -> Self {
         let mut memory = [0_u8; 4096];
-
+        
         //font is 80 bytes, should lie at 0x50
-        memory[0x50..0xA0].copy_from_slice(&font::FONT);
+        memory[0x50..(0x50+80)].copy_from_slice(&font::FONT);
 
         Cpu {
             memory: [0; 4096],
@@ -96,11 +94,9 @@ impl Cpu {
                 let x = self.registers[rx as usize] & 63;
                 let y = self.registers[ry as usize] & 31;
                 self.registers[0xf] = 0;
-                dbg!(&sprite);
                 for (i, row) in sprite.iter().enumerate() {
                     for (j, sprite_px) in (0..8).zip(PixIterator::new(row)) {
                         let display_px = display[y as usize + i][x as usize + j];
-                        dbg!(display_px, sprite_px, x, y);
                         //set vf on collide
                         if display_px == 1 && sprite_px == 1 {
                             self.registers[0xf] = 1;
@@ -190,22 +186,31 @@ impl Cpu {
             }
             Instruction::Ldfnt(r) => {
                 //font starts at 0x50 in memory
-                self.index = 0x50 + (self.registers[r as usize] * 5) as u16;
+                let char_offset = self.registers[r as usize] as u16 * 5;
+                dbg!(char_offset);
+                self.index = 0x50 + char_offset;
             }
             Instruction::Bcd(r) => {
+                let slice = &mut self.memory[(self.index as usize)..(self.index as usize + 3) ];
+                dbg!(&slice);
                 //binary encoded decimal conversion
                 let val = self.registers[r as usize];
-                self.memory[self.index as usize] = val / 100;
-                self.memory[self.index as usize + 1] = val % 100 / 10;
-                self.memory[self.index as usize + 2] = val % 10;
+                slice[0] = val / 100;
+                slice[1] = val % 100 / 10;
+                slice[2] = val % 10;
+                dbg!(val,val/100,val%100/10,val%10);
+                dbg!(&slice);
+
             }
             Instruction::Store(r) => {
-                let addrs = (self.index as usize)..(self.index as usize + r as usize);
-                self.memory[addrs].copy_from_slice(&self.registers[..(r as usize)]);
+                for reg in 0..=r as usize {
+                    self.memory[self.index as usize + reg] = self.registers[reg]; 
+                }
             }
             Instruction::Load(r) => {
-                let addrs = (self.index as usize)..(self.index as usize + r as usize);
-                self.registers[..(r as usize)].copy_from_slice(&self.memory[addrs]);
+                for reg in 0..=r as usize {
+                    self.registers[reg] = self.memory[self.index as usize + reg]; 
+                }
             }
         }
     }
