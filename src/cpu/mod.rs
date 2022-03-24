@@ -43,7 +43,7 @@ impl Cpu {
 
         Cpu {
             memory: [0; 4096],
-            pc: 0x200,
+            pc: 0,
             index: 0,
             delay_timer: 0,
             sound_timer: 0,
@@ -56,6 +56,7 @@ impl Cpu {
     pub fn load(mut self, filename: &str) -> Result<Self> {
         let program = std::fs::read(filename)?;
         self.memory[0x200..(0x200 + program.len())].copy_from_slice(&program);
+        self.pc = 0x200;
         Ok(self)
     }
 
@@ -144,7 +145,7 @@ impl Cpu {
                 if (self.registers[r1 as usize] as u16 + self.registers[r2 as usize] as u16) > 255 {
                     self.registers[0xf] = 1;
                 }
-                //have to use explicitly wrapping arithmetic
+                //have to use explicitly u8 wrapping arithmetic
                 self.registers[r1 as usize] = (Wrapping(self.registers[r1 as usize])
                     + Wrapping(self.registers[r2 as usize]))
                 .0;
@@ -154,7 +155,7 @@ impl Cpu {
                 if self.registers[r1 as usize] > self.registers[r2 as usize] {
                     self.registers[0xf] = 1;
                 }
-                //explicitly wrapping arithmetic
+                //explicitly wrapping u8 arithmetic
                 self.registers[r1 as usize] = (Wrapping(self.registers[r1 as usize])
                     - Wrapping(self.registers[r2 as usize]))
                 .0;
@@ -169,14 +170,14 @@ impl Cpu {
                 if self.registers[r2 as usize] > self.registers[r1 as usize] {
                     self.registers[0xf] = 1;
                 }
-                //explicitly wrapping arithmetic
+                //explicitly wrapping u8 arithmetic
                 self.registers[r1 as usize] = (Wrapping(self.registers[r2 as usize])
                     - Wrapping(self.registers[r1 as usize]))
                 .0;
             }
             Instruction::Shl(r1, _) => {
                 //r2 is ignored
-                self.registers[0xf] = 1 & self.registers[r1 as usize];
+                self.registers[0xf] = 0x80 & &self.registers[r1 as usize];
                 self.registers[r1 as usize] <<= 1;
             }
             Instruction::Skrne(r1, r2) => {
@@ -184,7 +185,7 @@ impl Cpu {
                     self.inc_pc();
                 }
             }
-            Instruction::Jumpi(nnn) => self.pc = nnn + self.registers[0] as u16,
+            Instruction::Jumpi(nnn) => self.pc = (nnn + self.registers[0] as u16) & 0xfff, //u12 wrap
             Instruction::Rand(r, byte) => self.registers[r as usize] = random::<u8>() & byte,
             Instruction::Skp(r) => {
                 if keys[r as usize] {
@@ -197,7 +198,7 @@ impl Cpu {
                 }
             }
             Instruction::Moved(r) => self.registers[r as usize] = self.delay_timer,
-            Instruction::Key(r) => todo!(),
+            Instruction::Key(_) => todo!(),
             Instruction::Loadd(r) => self.delay_timer = self.registers[r as usize],
             Instruction::Loads(r) => self.sound_timer = self.registers[r as usize],
             Instruction::Addi(r) => {
