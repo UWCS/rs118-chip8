@@ -23,7 +23,7 @@ impl crate::vm::Chip8Cpu for Cpu {
     fn step(&mut self, display: &mut Display, keys: &Keys) {
         let opcode = self.fetch();
         let instruction = decode(opcode);
-
+        dbg!(&instruction);
         self.exectute(instruction, display, keys);
     }
 
@@ -35,9 +35,9 @@ impl crate::vm::Chip8Cpu for Cpu {
 impl Cpu {
     pub fn new(speed: u32) -> Self {
         let mut memory = [0_u8; 4096];
-        
+
         //font is 80 bytes, should lie at 0x50
-        memory[0x50..(0x50+80)].copy_from_slice(&font::FONT);
+        memory[0x50..(0x50 + 80)].copy_from_slice(&font::FONT);
 
         Cpu {
             memory: [0; 4096],
@@ -84,34 +84,27 @@ impl Cpu {
             Instruction::Loadr(r, byte) => {
                 self.registers[r as usize] = byte;
             }
-            Instruction::Add(r, byte) => self.registers[r as usize] = self.registers[r as usize].wrapping_add(byte),
+            Instruction::Add(r, byte) => {
+                self.registers[r as usize] = self.registers[r as usize].wrapping_add(byte)
+            }
             Instruction::Loadi(nnn) => {
                 self.index = nnn;
             }
             Instruction::Draw(rx, ry, n) => {
                 let range = (self.index as usize)..((self.index + n as u16) as usize);
                 let sprite = &self.memory[range];
-                let x = self.registers[rx as usize] & 63;
-                let y = self.registers[ry as usize] & 31;
+                let x = self.registers[rx as usize];
+                let y = self.registers[ry as usize];
                 self.registers[0xf] = 0;
                 for (i, row) in sprite.iter().enumerate() {
                     for (j, sprite_px) in (0..8).zip(PixIterator::new(row)) {
-                        let display_px = display[y as usize + i][x as usize + j];
+                        let display_px = display[(y as usize + i) % 32][(x as usize + j) % 64];
                         //set vf on collide
                         if display_px == 1 && sprite_px == 1 {
                             self.registers[0xf] = 1;
                         }
                         //xor onto display
-                        display[y as usize + i][x as usize + j] ^= sprite_px;
-
-                        //are we at the right edge of the screen?
-                        if x == 63 {
-                            break;
-                        }
-                    }
-                    // are we at the bottom of the screen?
-                    if y == 31 {
-                        break;
+                        display[(y as usize + i) % 32][(x as usize + j) % 64] ^= sprite_px;
                     }
                 }
             }
@@ -135,12 +128,14 @@ impl Cpu {
             Instruction::And(r1, r2) => self.registers[r1 as usize] &= self.registers[r2 as usize],
             Instruction::Xor(r1, r2) => self.registers[r1 as usize] ^= self.registers[r2 as usize],
             Instruction::Addr(r1, r2) => {
-                let (result,overflow) = self.registers[r1 as usize].overflowing_add(self.registers[r2 as usize]);
+                let (result, overflow) =
+                    self.registers[r1 as usize].overflowing_add(self.registers[r2 as usize]);
                 self.registers[r1 as usize] = result;
                 self.registers[0xf] = overflow.into();
             }
             Instruction::Sub(r1, r2) => {
-                let (result,overflow) = self.registers[r1 as usize].overflowing_sub(self.registers[r2 as usize]);
+                let (result, overflow) =
+                    self.registers[r1 as usize].overflowing_sub(self.registers[r2 as usize]);
                 self.registers[r1 as usize] = result;
                 self.registers[0xf] = overflow.into();
             }
@@ -150,7 +145,8 @@ impl Cpu {
                 self.registers[r1 as usize] >>= 1;
             }
             Instruction::Ssub(r1, r2) => {
-                let (result,overflow) = self.registers[r2 as usize].overflowing_sub(self.registers[r1 as usize]);
+                let (result, overflow) =
+                    self.registers[r2 as usize].overflowing_sub(self.registers[r1 as usize]);
                 self.registers[r1 as usize] = result;
                 self.registers[0xf] = overflow.into();
             }
@@ -177,12 +173,19 @@ impl Cpu {
                 }
             }
             Instruction::Moved(r) => self.registers[r as usize] = self.delay_timer,
-            Instruction::Key(_) => panic!("I haven't done this instruction because it blocks, making timing super hard. If you're trying to play a ROM that depends on this, simply don't."),
+            Instruction::Key(r) => {
+                //waiting is implemented by just re-running the instruction until a keypress is detected
+                //might be bad if run at slower speeds
+                if !keys[self.registers[r as usize] as usize] {
+                    self.pc -= 2
+                }
+                dbg!(&keys);
+            }
             Instruction::Loadd(r) => self.delay_timer = self.registers[r as usize],
             Instruction::Loads(r) => self.sound_timer = self.registers[r as usize],
             Instruction::Addi(r) => {
                 //weird wrapping arithmetic, u16+u8 but has to wrap to a u12
-                self.index += (self.registers[r as usize] as u16) & 0xfff;
+                self.index = (self.index + (self.registers[r as usize] as u16)) & 0xfff;
             }
             Instruction::Ldfnt(r) => {
                 //font starts at 0x50 in memory
@@ -191,25 +194,24 @@ impl Cpu {
                 self.index = 0x50 + char_offset;
             }
             Instruction::Bcd(r) => {
-                let slice = &mut self.memory[(self.index as usize)..(self.index as usize + 3) ];
+                let slice = &mut self.memory[(self.index as usize)..(self.index as usize + 3)];
                 dbg!(&slice);
                 //binary encoded decimal conversion
                 let val = self.registers[r as usize];
                 slice[0] = val / 100;
                 slice[1] = val % 100 / 10;
                 slice[2] = val % 10;
-                dbg!(val,val/100,val%100/10,val%10);
+                dbg!(val, val / 100, val % 100 / 10, val % 10);
                 dbg!(&slice);
-
             }
             Instruction::Store(r) => {
                 for reg in 0..=r as usize {
-                    self.memory[self.index as usize + reg] = self.registers[reg]; 
+                    self.memory[self.index as usize + reg] = self.registers[reg];
                 }
             }
             Instruction::Load(r) => {
                 for reg in 0..=r as usize {
-                    self.registers[reg] = self.memory[self.index as usize + reg]; 
+                    self.registers[reg] = self.memory[self.index as usize + reg];
                 }
             }
         }

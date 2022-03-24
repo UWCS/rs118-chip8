@@ -1,9 +1,10 @@
-use std::time::{Duration, Instant};
+mod display;
+mod input;
 
+use std::time::{Duration, Instant};
 use winit::event::{Event, VirtualKeyCode};
 use winit::event_loop::ControlFlow;
 use winit_input_helper::WinitInputHelper;
-mod display;
 
 pub type Display = [[u8; 64]; 32];
 pub type Keys = [bool; 16];
@@ -35,9 +36,6 @@ impl<C: Chip8Cpu> Chip8VM<C> {
         let mut input = WinitInputHelper::new();
 
         event_loop.run(move |event, _, control_flow| {
-            let t0 = Instant::now();
-            *control_flow = ControlFlow::WaitUntil(t0 + self.cpu.speed());
-
             // Draw the current frame
             if let Event::RedrawRequested(_) = event {
                 if pixels.render().is_err() {
@@ -53,14 +51,18 @@ impl<C: Chip8Cpu> Chip8VM<C> {
                     *control_flow = ControlFlow::Exit;
                     return;
                 }
-
+                //handle keyboard input to emulator
+                input::update_keys(&input, &mut self.keys);
                 // Resize the window
                 if let Some(size) = input.window_resized() {
                     pixels.resize_surface(size.width, size.height);
                 }
             }
             //cpu step
+            let t0 = Instant::now();
             self.cpu.step(&mut self.display, &self.keys);
+            eprintln!("Time taken: {:?}", Instant::now() - t0);
+
             // request a redraw at the end of each loop
             window.request_redraw();
         });
