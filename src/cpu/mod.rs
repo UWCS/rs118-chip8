@@ -5,15 +5,16 @@ mod test;
 use crate::vm::{Display, Keys};
 use anyhow::Result;
 use instruction::{decode, Instruction};
+use rand::random;
+use std::num::Wrapping;
 use std::time::Duration;
-
 pub struct Cpu {
     memory: [u8; 4096],
     pc: u16,
     index: u16,
     stack: Vec<u16>,
-    delay: u8,
-    sound: u8,
+    delay_timer: u8,
+    sound_timer: u8,
     registers: [u8; 16],
     speed: Duration,
 }
@@ -44,8 +45,8 @@ impl Cpu {
             memory: [0; 4096],
             pc: 0x200,
             index: 0,
-            delay: 0,
-            sound: 0,
+            delay_timer: 0,
+            sound_timer: 0,
             stack: Vec::new(),
             registers: [0; 16],
             speed: Duration::from_secs_f64(1_f64 / speed as f64),
@@ -63,42 +64,38 @@ impl Cpu {
             self.memory[self.pc as usize],
             self.memory[(self.pc + 1) as usize],
         ]);
-        self.pc += 2;
-        //wrapping
-        if self.pc >= 4096 {
-            self.pc = 0;
-        }
+        self.inc_pc();
         instruction
     }
 
     fn exectute(&mut self, instruction: Instruction, display: &mut Display, keys: &Keys) {
         match instruction {
             Instruction::Nop => (),
-            Instruction::Cls => (),
+            Instruction::Cls => display.copy_from_slice(&[[0; 64]; 32]),
             Instruction::Rts => {
                 self.pc = self.stack.pop().unwrap_or(0);
             }
-            Instruction::Jmp(nnn) => {
-                self.pc = nnn;
+            Instruction::Jmp(addr) => {
+                self.pc = addr;
             }
-            Instruction::Call(nnn) => {
+            Instruction::Call(addr) => {
                 self.stack.push(self.pc);
-                self.pc = nnn;
+                self.pc = addr;
             }
-            Instruction::Loadr(x, kk) => {
-                self.registers[x as usize] = kk;
+            Instruction::Loadr(r, byte) => {
+                self.registers[r as usize] = byte;
             }
-            Instruction::Add(x, kk) => {
-                self.registers[x as usize] += kk;
+            Instruction::Add(r, byte) => {
+                self.registers[r as usize] += byte;
             }
             Instruction::Loadi(nnn) => {
                 self.index = nnn;
             }
-            Instruction::Draw(x, y, n) => {
+            Instruction::Draw(rx, ry, n) => {
                 let range = (self.index as usize)..((self.index + n as u16) as usize);
                 let sprite = &self.memory[range];
-                let x = self.registers[x as usize] & 63;
-                let y = self.registers[y as usize] & 31;
+                let x = self.registers[rx as usize] & 63;
+                let y = self.registers[ry as usize] & 31;
                 self.registers[0xf] = 0;
                 dbg!(&sprite);
                 for (i, row) in sprite.iter().enumerate() {
@@ -123,33 +120,117 @@ impl Cpu {
                     }
                 }
             }
-            Instruction::Ske(_, _) => todo!(),
-            Instruction::Skne(_, _) => todo!(),
-            Instruction::Skre(_, _) => todo!(),
-            Instruction::Move(_, _) => todo!(),
-            Instruction::Or(_, _) => todo!(),
-            Instruction::And(_, _) => todo!(),
-            Instruction::Xor(_, _) => todo!(),
-            Instruction::Addr(_, _) => todo!(),
-            Instruction::Sub(_, _) => todo!(),
-            Instruction::Shr(_, _) => todo!(),
-            Instruction::Ssub(_, _) => todo!(),
-            Instruction::Shl(_, _) => todo!(),
-            Instruction::Skrne(_, _) => todo!(),
-            Instruction::Jumpi(_) => todo!(),
-            Instruction::Rand(_, _) => todo!(),
-            Instruction::Skp(_) => todo!(),
-            Instruction::Sknp(_) => todo!(),
-            Instruction::Moved(_) => todo!(),
-            Instruction::Key(_) => todo!(),
-            Instruction::Loadd(_) => todo!(),
-            Instruction::Loads(_) => todo!(),
-            Instruction::Addi(_) => todo!(),
-            Instruction::Ldfnt(_) => todo!(),
-            Instruction::Bcd(_) => todo!(),
-            Instruction::Store(_) => todo!(),
-            Instruction::Load(_) => todo!(),
+            Instruction::Ske(r, byte) => {
+                if self.registers[r as usize] == byte {
+                    self.inc_pc();
+                }
+            }
+            Instruction::Skne(r, byte) => {
+                if self.registers[r as usize] != byte {
+                    self.inc_pc();
+                }
+            }
+            Instruction::Skre(r1, r2) => {
+                if self.registers[r1 as usize] == self.registers[r2 as usize] {
+                    self.inc_pc();
+                }
+            }
+            Instruction::Move(r1, r2) => self.registers[r1 as usize] = self.registers[r2 as usize],
+            Instruction::Or(r1, r2) => self.registers[r1 as usize] |= self.registers[r2 as usize],
+            Instruction::And(r1, r2) => self.registers[r1 as usize] &= self.registers[r2 as usize],
+            Instruction::Xor(r1, r2) => self.registers[r1 as usize] ^= self.registers[r2 as usize],
+            Instruction::Addr(r1, r2) => {
+                //check for overflow
+                if (self.registers[r1 as usize] as u16 + self.registers[r2 as usize] as u16) > 255 {
+                    self.registers[0xf] = 1;
+                }
+                //have to use explicitly wrapping arithmetic
+                self.registers[r1 as usize] = (Wrapping(self.registers[r1 as usize])
+                    + Wrapping(self.registers[r2 as usize]))
+                .0;
+            }
+            Instruction::Sub(r1, r2) => {
+                //check for overflow
+                if self.registers[r1 as usize] > self.registers[r2 as usize] {
+                    self.registers[0xf] = 1;
+                }
+                //explicitly wrapping arithmetic
+                self.registers[r1 as usize] = (Wrapping(self.registers[r1 as usize])
+                    - Wrapping(self.registers[r2 as usize]))
+                .0;
+            }
+            Instruction::Shr(r1, _) => {
+                //r2 is ignored
+                self.registers[0xf] = 1 & self.registers[r1 as usize];
+                self.registers[r1 as usize] >>= 1;
+            }
+            Instruction::Ssub(r1, r2) => {
+                //check for overflow
+                if self.registers[r2 as usize] > self.registers[r1 as usize] {
+                    self.registers[0xf] = 1;
+                }
+                //explicitly wrapping arithmetic
+                self.registers[r1 as usize] = (Wrapping(self.registers[r2 as usize])
+                    - Wrapping(self.registers[r1 as usize]))
+                .0;
+            }
+            Instruction::Shl(r1, _) => {
+                //r2 is ignored
+                self.registers[0xf] = 1 & self.registers[r1 as usize];
+                self.registers[r1 as usize] <<= 1;
+            }
+            Instruction::Skrne(r1, r2) => {
+                if self.registers[r1 as usize] != self.registers[r2 as usize] {
+                    self.inc_pc();
+                }
+            }
+            Instruction::Jumpi(nnn) => self.pc = nnn + self.registers[0] as u16,
+            Instruction::Rand(r, byte) => self.registers[r as usize] = random::<u8>() & byte,
+            Instruction::Skp(r) => {
+                if keys[r as usize] {
+                    self.inc_pc()
+                }
+            }
+            Instruction::Sknp(r) => {
+                if !keys[r as usize] {
+                    self.inc_pc()
+                }
+            }
+            Instruction::Moved(r) => self.registers[r as usize] = self.delay_timer,
+            Instruction::Key(r) => todo!(),
+            Instruction::Loadd(r) => self.delay_timer = self.registers[r as usize],
+            Instruction::Loads(r) => self.sound_timer = self.registers[r as usize],
+            Instruction::Addi(r) => {
+                //weird wrapping arithmetic, u16+u8 but has to wrap to a u12
+                self.index += (self.registers[r as usize] as u16) & 0xfff;
+            }
+            Instruction::Ldfnt(r) => {
+                //font starts at 0x50 in memory
+                self.index = 0x50 + (self.registers[r as usize] * 5) as u16;
+            }
+            Instruction::Bcd(r) => {
+                //binary encoded decimal conversion
+                let val = self.registers[r as usize];
+                self.memory[self.index as usize] = val / 100;
+                self.memory[self.index as usize + 1] = val % 100 / 10;
+                self.memory[self.index as usize + 2] = val % 10;
+            }
+            Instruction::Store(r) => {
+                let addrs = (self.index as usize)..(self.index as usize + r as usize);
+                self.memory[addrs].copy_from_slice(&self.registers);
+            }
+            Instruction::Load(r) => {
+                let addrs = (self.index as usize)..(self.index as usize + r as usize);
+                self.registers.copy_from_slice(&self.memory[addrs]);
+            }
         }
+    }
+
+    //helpers for stuff involving wrapping
+    //wrapping pc incremement so we dont forget to do it anywhere
+    fn inc_pc(&mut self) {
+        self.pc += 2;
+        self.pc &= 0xfff;
     }
 }
 //helpers here
