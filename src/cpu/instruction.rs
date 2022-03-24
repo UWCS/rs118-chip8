@@ -36,9 +36,9 @@ pub enum Instruction {
     Loads(Reg), //Fx18, sound timer = Vy
     Addi(Reg), //Fx1E, index = Vx + index
     Ldfnt(Reg), //Fx29, load index register with address of the font charachter in Vx
-    Bcd(Reg), //Store three bytes represnting the binary-coded decimal value of Vx to the address at index
-    Store(Reg), //Store all the registers at the address in the index register
-    Load(Reg), //Load all the registers with values from the address at the index register
+    Bcd(Reg), //Fx33 Store three bytes represnting the binary-coded decimal value of Vx to the address at index
+    Store(Reg), //Fx55 Store all the registers at the address in the index register
+    Load(Reg), //Fx65 Load all the registers with values from the address at the index register
 }
 
 use Instruction::*;
@@ -56,10 +56,36 @@ pub fn decode(opcode: u16) -> Instruction {
         (0, _, _, _) => Nop,
         (1, _, _, _) => Jmp(nnn),
         (2, _, _, _) => Call(nnn),
+        (3, x, _, _) => Ske(x, kk),
+        (4, x, _, _) => Skne(x, kk),
+        (5, x, y, 0) => Skre(x, y),
         (6, x, _, _) => Loadr(x, kk),
         (7, x, _, _) => Add(x, kk),
+        (8, x, y, 0) => Move(x, y),
+        (8, x, y, 1) => Or(x, y),
+        (8, x, y, 2) => And(x, y),
+        (8, x, y, 3) => Xor(x, y),
+        (8, x, y, 4) => Addr(x, y),
+        (8, x, y, 5) => Sub(x, y),
+        (8, x, y, 6) => Shr(x, y),
+        (8, x, y, 7) => Ssub(x, y),
+        (8, x, y, 0xE) => Shl(x, y),
+        (9, x, y, 0) => Skrne(x, y),
         (0xA, _, _, _) => Loadi(nnn),
+        (0xB, _, _, _) => Jumpi(nnn),
+        (0xC, x, _, _) => Rand(x, kk),
         (0xD, x, y, n) => Draw(x, y, n),
-        _ => unimplemented!(),
+        (0xE, x, 9, 0xE) => Skp(x),
+        (0xE, x, 0xA, 1) => Sknp(x),
+        (0xF, x, 0, 7) => Moved(x),
+        (0xF, x, 0, 0xA) => Key(x),
+        (0xF, x, 1, 5) => Loadd(x),
+        (0xF, x, 1, 8) => Loads(x),
+        (0xF, x, 1, 0xE) => Addi(x),
+        (0xF, x, 2, 9) => Ldfnt(x),
+        (0xF, x, 3, 3) => Bcd(x),
+        (0xF, x, 5, 5) => Store(x),
+        (0xF, x, 6, 5) => Load(x),
+        _ => panic!("Invalid instruction encountered!"),
     }
 }
