@@ -2,29 +2,42 @@ mod font;
 mod instruction;
 mod test;
 
-use crate::vm::{Display, Keys};
+use crate::interpreter::{Display, Keys};
 use anyhow::Result;
 use instruction::{decode, Instruction};
 use rand::random;
 use std::time::Duration;
+
 pub struct Cpu {
     memory: [u8; 4096],
     pc: u16,
     index: u16,
     stack: Vec<u16>,
+    registers: [u8; 16],
     delay_timer: u8,
     sound_timer: u8,
-    registers: [u8; 16],
     speed: Duration,
+    ticker: u32,
+    max_ticks: u32,
+    display: [[u8; 64]; 32],
 }
 
-impl crate::vm::Chip8Cpu for Cpu {
+impl crate::interpreter::Cpu for Cpu {
     //this should execute in the time 1/speed
-    fn step(&mut self, display: &mut Display, keys: &Keys) {
+    fn step(&mut self, keys: &Keys) -> Option<Display> {
         let opcode = self.fetch();
         let instruction = decode(opcode);
-        dbg!(&instruction);
-        self.exectute(instruction, display, keys);
+        let update = self.exectute(instruction, keys);
+
+        //ticker counts up to max_ticks, and at max_ticks the timers are decremented
+        self.ticker += 1;
+        if self.ticker == self.max_ticks {
+            self.ticker = 0;
+            self.delay_timer = self.delay_timer.saturating_sub(1);
+            self.sound_timer = self.sound_timer.saturating_sub(1);
+        }
+
+        update
     }
 
     fn speed(&self) -> Duration {
@@ -48,6 +61,9 @@ impl Cpu {
             stack: Vec::new(),
             registers: [0; 16],
             speed: Duration::from_secs_f64(1_f64 / speed as f64),
+            ticker: 0,
+            max_ticks: (speed as f64 / 60_f64).round() as u32,
+            display: [[0; 64]; 32],
         }
     }
 
@@ -67,10 +83,13 @@ impl Cpu {
         instruction
     }
 
-    fn exectute(&mut self, instruction: Instruction, display: &mut Display, keys: &Keys) {
+    fn exectute(&mut self, instruction: Instruction, keys: &Keys) -> Option<Display> {
         match instruction {
             Instruction::Nop => (),
-            Instruction::Cls => display.copy_from_slice(&[[0; 64]; 32]),
+            Instruction::Cls => {
+                self.display = [[0; 64]; 32];
+                return Some(self.display);
+            }
             Instruction::Rts => {
                 self.pc = self.stack.pop().unwrap_or(0);
             }
@@ -98,15 +117,16 @@ impl Cpu {
                 self.registers[0xf] = 0;
                 for (i, row) in sprite.iter().enumerate() {
                     for (j, sprite_px) in (0..8).zip(PixIterator::new(row)) {
-                        let display_px = display[(y as usize + i) % 32][(x as usize + j) % 64];
+                        let display_px = self.display[(y as usize + i) % 32][(x as usize + j) % 64];
                         //set vf on collide
                         if display_px == 1 && sprite_px == 1 {
                             self.registers[0xf] = 1;
                         }
                         //xor onto display
-                        display[(y as usize + i) % 32][(x as usize + j) % 64] ^= sprite_px;
+                        self.display[(y as usize + i) % 32][(x as usize + j) % 64] ^= sprite_px;
                     }
                 }
+                return Some(self.display);
             }
             Instruction::Ske(r, byte) => {
                 if self.registers[r as usize] == byte {
@@ -214,7 +234,8 @@ impl Cpu {
                     self.registers[reg] = self.memory[self.index as usize + reg];
                 }
             }
-        }
+        };
+        None
     }
 
     //helpers for stuff involving wrapping

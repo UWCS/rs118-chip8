@@ -86,6 +86,6 @@ pub fn decode(opcode: u16) -> Instruction {
         (0xF, x, 3, 3) => Bcd(x),
         (0xF, x, 5, 5) => Store(x),
         (0xF, x, 6, 5) => Load(x),
-        _ => panic!("Invalid instruction encountered!"),
+        _ => panic!("Invalid instruction encountered!: {:#06X}", opcode),
     }
 }

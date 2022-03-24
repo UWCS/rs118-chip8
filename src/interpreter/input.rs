@@ -25,8 +25,6 @@ const KEYMAP: [VirtualKeyCode; 16] = [
     V,    //F
 ];
 
-pub fn update_keys(input: &WinitInputHelper, keys: &mut super::Keys) {
-    for k in 0..16 {
-        keys[k] = input.key_held(KEYMAP[k]);
-    }
+pub fn key_state(input: &WinitInputHelper) -> [bool; 16] {
+    KEYMAP.map(|k| input.key_held(k))
 }
