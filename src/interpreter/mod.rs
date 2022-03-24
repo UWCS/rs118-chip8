@@ -25,7 +25,7 @@ pub trait Cpu: Sized + Send + 'static {
 
         let mut input = WinitInputHelper::new();
 
-        //include a flag so we know if the current frame has been drawn, to avoid drawing it twicw
+        //include a flag so we know if the current frame has been drawn, to avoid drawing it twice
         let display = Arc::new(AtomicCell::new(([[0; 64]; 32], false)));
         let keys = Arc::new(AtomicCell::new([false; 16]));
 
