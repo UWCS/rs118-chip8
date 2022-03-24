@@ -17,6 +17,7 @@ pub type Keys = [bool; 16];
 pub trait Cpu: Sized + Send + 'static {
     fn step(&mut self, keys: &Keys) -> Option<Display>;
     fn speed(&self) -> Duration;
+    fn buzzer_active(&self) -> bool;
 
     fn run(mut self) -> ! {
         let (event_loop, window, mut pixels) =

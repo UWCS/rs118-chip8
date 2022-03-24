@@ -43,6 +43,9 @@ impl crate::interpreter::Cpu for Cpu {
     fn speed(&self) -> Duration {
         self.speed
     }
+    fn buzzer_active(&self) -> bool {
+        self.sound_timer != 0
+    }
 }
 
 impl Cpu {
@@ -117,13 +120,14 @@ impl Cpu {
                 self.registers[0xf] = 0;
                 for (i, row) in sprite.iter().enumerate() {
                     for (j, sprite_px) in (0..8).zip(PixIterator::new(row)) {
-                        let display_px = self.display[(y as usize + i) % 32][(x as usize + j) % 64];
+                        let display_px =
+                            &mut self.display[(y as usize + i) % 32][(x as usize + j) % 64];
                         //set vf on collide
-                        if display_px == 1 && sprite_px == 1 {
+                        if *display_px == 1 && sprite_px == 1 {
                             self.registers[0xf] = 1;
                         }
                         //xor onto display
-                        self.display[(y as usize + i) % 32][(x as usize + j) % 64] ^= sprite_px;
+                        *display_px ^= sprite_px;
                     }
                 }
                 return Some(self.display);
@@ -183,12 +187,12 @@ impl Cpu {
             Instruction::Jumpi(nnn) => self.pc = (nnn + self.registers[0] as u16) & 0xfff, //u12 wrap
             Instruction::Rand(r, byte) => self.registers[r as usize] = random::<u8>() & byte,
             Instruction::Skp(r) => {
-                if keys[r as usize] {
+                if keys[self.registers[r as usize] as usize] {
                     self.inc_pc()
                 }
             }
             Instruction::Sknp(r) => {
-                if !keys[r as usize] {
+                if !keys[self.registers[r as usize] as usize] {
                     self.inc_pc()
                 }
             }
@@ -196,8 +200,18 @@ impl Cpu {
             Instruction::Key(r) => {
                 //waiting is implemented by just re-running the instruction until a keypress is detected
                 //might be bad if run at slower speeds
-                if !keys[self.registers[r as usize] as usize] {
+                dbg!(&r, &self.registers[r as usize]);
+                //if no keys held
+                if keys.iter().all(|k| !k) {
                     self.pc -= 2
+                } else {
+                    //at least one key is pressed, so get the first one from the array thats held down
+                    self.registers[r as usize] = keys
+                        .iter()
+                        .enumerate()
+                        .filter_map(|(k, b)| if *b { Some(k) } else { None })
+                        .next()
+                        .unwrap() as u8;
                 }
                 dbg!(&keys);
             }
@@ -210,19 +224,15 @@ impl Cpu {
             Instruction::Ldfnt(r) => {
                 //font starts at 0x50 in memory
                 let char_offset = self.registers[r as usize] as u16 * 5;
-                dbg!(char_offset);
                 self.index = 0x50 + char_offset;
             }
             Instruction::Bcd(r) => {
                 let slice = &mut self.memory[(self.index as usize)..(self.index as usize + 3)];
-                dbg!(&slice);
                 //binary encoded decimal conversion
                 let val = self.registers[r as usize];
                 slice[0] = val / 100;
                 slice[1] = val % 100 / 10;
                 slice[2] = val % 10;
-                dbg!(val, val / 100, val % 100 / 10, val % 10);
-                dbg!(&slice);
             }
             Instruction::Store(r) => {
                 for reg in 0..=r as usize {
@@ -238,7 +248,7 @@ impl Cpu {
         None
     }
 
-    //helpers for stuff involving wrapping
+    //helpers
     //wrapping pc incremement so we dont forget to do it anywhere
     fn inc_pc(&mut self) {
         self.pc += 2;
