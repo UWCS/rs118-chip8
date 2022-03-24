@@ -86,9 +86,7 @@ impl Cpu {
             Instruction::Loadr(r, byte) => {
                 self.registers[r as usize] = byte;
             }
-            Instruction::Add(r, byte) => {
-                self.registers[r as usize] += byte;
-            }
+            Instruction::Add(r, byte) => self.registers[r as usize] = self.registers[r as usize].wrapping_add(byte),
             Instruction::Loadi(nnn) => {
                 self.index = nnn;
             }
@@ -141,24 +139,14 @@ impl Cpu {
             Instruction::And(r1, r2) => self.registers[r1 as usize] &= self.registers[r2 as usize],
             Instruction::Xor(r1, r2) => self.registers[r1 as usize] ^= self.registers[r2 as usize],
             Instruction::Addr(r1, r2) => {
-                //check for overflow
-                if (self.registers[r1 as usize] as u16 + self.registers[r2 as usize] as u16) > 255 {
-                    self.registers[0xf] = 1;
-                }
-                //have to use explicitly u8 wrapping arithmetic
-                self.registers[r1 as usize] = (Wrapping(self.registers[r1 as usize])
-                    + Wrapping(self.registers[r2 as usize]))
-                .0;
+                let (result,overflow) = self.registers[r1 as usize].overflowing_add(self.registers[r2 as usize]);
+                self.registers[r1 as usize] = result;
+                self.registers[0xf] = overflow.into();
             }
             Instruction::Sub(r1, r2) => {
-                //check for overflow
-                if self.registers[r1 as usize] > self.registers[r2 as usize] {
-                    self.registers[0xf] = 1;
-                }
-                //explicitly wrapping u8 arithmetic
-                self.registers[r1 as usize] = (Wrapping(self.registers[r1 as usize])
-                    - Wrapping(self.registers[r2 as usize]))
-                .0;
+                let (result,overflow) = self.registers[r1 as usize].overflowing_sub(self.registers[r2 as usize]);
+                self.registers[r1 as usize] = result;
+                self.registers[0xf] = overflow.into();
             }
             Instruction::Shr(r1, _) => {
                 //r2 is ignored
@@ -166,14 +154,9 @@ impl Cpu {
                 self.registers[r1 as usize] >>= 1;
             }
             Instruction::Ssub(r1, r2) => {
-                //check for overflow
-                if self.registers[r2 as usize] > self.registers[r1 as usize] {
-                    self.registers[0xf] = 1;
-                }
-                //explicitly wrapping u8 arithmetic
-                self.registers[r1 as usize] = (Wrapping(self.registers[r2 as usize])
-                    - Wrapping(self.registers[r1 as usize]))
-                .0;
+                let (result,overflow) = self.registers[r2 as usize].overflowing_sub(self.registers[r1 as usize]);
+                self.registers[r1 as usize] = result;
+                self.registers[0xf] = overflow.into();
             }
             Instruction::Shl(r1, _) => {
                 //r2 is ignored
@@ -198,7 +181,7 @@ impl Cpu {
                 }
             }
             Instruction::Moved(r) => self.registers[r as usize] = self.delay_timer,
-            Instruction::Key(_) => todo!(),
+            Instruction::Key(_) => panic!("I haven't done this instruction because it blocks, making timing super hard. If you're trying to play a ROM that depends on this, simply don't."),
             Instruction::Loadd(r) => self.delay_timer = self.registers[r as usize],
             Instruction::Loads(r) => self.sound_timer = self.registers[r as usize],
             Instruction::Addi(r) => {
@@ -218,11 +201,11 @@ impl Cpu {
             }
             Instruction::Store(r) => {
                 let addrs = (self.index as usize)..(self.index as usize + r as usize);
-                self.memory[addrs].copy_from_slice(&self.registers);
+                self.memory[addrs].copy_from_slice(&self.registers[..(r as usize)]);
             }
             Instruction::Load(r) => {
                 let addrs = (self.index as usize)..(self.index as usize + r as usize);
-                self.registers.copy_from_slice(&self.memory[addrs]);
+                self.registers[..(r as usize)].copy_from_slice(&self.memory[addrs]);
             }
         }
     }
