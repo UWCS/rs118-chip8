@@ -1,3 +1,5 @@
+//!`chip8_base` provides everything you need to get started building your own CHIP-8 interpreter.
+//! See the documentation for the [`Cpu`][Cpu] trait to get started.
+
 mod cpu;
-//re-export everything from CPU module for people using as library to build on
 pub use {cpu::Cpu, cpu::Display, cpu::Keys};
