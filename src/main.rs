@@ -7,7 +7,7 @@ fn main() {
     let cli = Cli::parse();
 
     let filename: &str = &cli.rom;
-    let cpu = cpu_impl::Cpu::new(500)
+    let cpu = cpu_impl::Cpu::new(700)
         .load(filename)
         .unwrap_or_else(|_| panic!("Could not load ROM: {}", filename));
     cpu::Cpu::run(cpu);
