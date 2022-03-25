@@ -5,7 +5,7 @@ edition = "2021"
 authors = ["Joey Harrison <Joeyh021@icloud.com>"]
 readme = "README.md"
 license = "MIT"
-description = "A CHIP-8 Emulator, along with a trait for building one yourself!"
+description = "Yet another CHIP-8 interpreter, built for use in RS118."
 
 [dependencies]
 pixels = "0.9.0"
@@ -14,6 +14,7 @@ winit_input_helper = "0.11"
 anyhow = "1.0"
 rand = "0.8.5"
 crossbeam = "0.8.1"
+clap = { version = "3.1.6", features = ["cargo", "derive"] }
 
 [lib]
 name = "chip8_base"
