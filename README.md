@@ -1,6 +1,6 @@
 # RS118 CHIP-8
 
-Yet another CHIP-8 Interpreter in Rust, built for use in [RS118][https://rs118.uwcs.co.uk]. Provides both a complete emulator, and a library to use a base for building your own.
+Yet another CHIP-8 Interpreter in Rust, built for use in [RS118](https://rs118.uwcs.co.uk). Provides both a complete emulator, and a library to use a base for building your own.
 
 # Usage
 
