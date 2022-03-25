@@ -1,8 +1,8 @@
 [package]
-name = "chip-8"
+name = "RS118-CHIP8"
 version = "0.1.0"
 edition = "2021"
-authors = ["Joey Harrison <Joeyh021@icloud.com>"]
+authors = ["Joey Harrison <joeyh021@icloud.com>"]
 readme = "README.md"
 license = "MIT"
 description = "Yet another CHIP-8 interpreter, built for use in RS118."

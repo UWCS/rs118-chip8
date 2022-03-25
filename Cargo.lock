@@ -3,6 +3,19 @@
 version = 3
 
 [[package]]
+name = "RS118-CHIP8"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "crossbeam",
+ "pixels",
+ "rand",
+ "winit",
+ "winit_input_helper",
+]
+
+[[package]]
 name = "ahash"
 version = "0.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -129,19 +142,6 @@ name = "cfg_aliases"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fd16c4719339c4530435d38e511904438d07cce7950afa3718a84ac36c10e89e"
-
-[[package]]
-name = "chip-8"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "clap",
- "crossbeam",
- "pixels",
- "rand",
- "winit",
- "winit_input_helper",
-]
 
 [[package]]
 name = "clap"
