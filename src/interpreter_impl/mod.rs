@@ -27,7 +27,7 @@ impl crate::interpreter::Interpreter for VM {
     fn step(&mut self, keys: &Keys) -> Option<Display> {
         let opcode = self.fetch();
         let instruction = decode(opcode);
-        let update = self.exectute(instruction, keys);
+        let update = self.execute(instruction, keys);
 
         //ticker counts up to max_ticks, and at max_ticks the timers are decremented
         self.ticker += 1;
@@ -86,7 +86,7 @@ impl VM {
         instruction
     }
 
-    fn exectute(&mut self, instruction: Instruction, keys: &Keys) -> Option<Display> {
+    fn execute(&mut self, instruction: Instruction, keys: &Keys) -> Option<Display> {
         match instruction {
             Instruction::Nop => (),
             Instruction::Cls => {
