@@ -115,13 +115,19 @@ impl VM {
             Instruction::Draw(rx, ry, n) => {
                 let range = (self.index as usize)..((self.index + n as u16) as usize);
                 let sprite = &self.memory[range];
-                let x = self.registers[rx as usize];
-                let y = self.registers[ry as usize];
+                let x = self.registers[rx as usize] % 64;
+                let y = self.registers[ry as usize] % 32;
                 self.registers[0xf] = 0;
                 for (i, row) in sprite.iter().enumerate() {
+                    if y + i as u8 > 31 {
+                        break;
+                    }
                     for (j, sprite_px) in (0..8).zip(PixIterator::new(row)) {
-                        let display_px =
-                            &mut self.display[(y as usize + i) % 32][(x as usize + j) % 64];
+                        if x + j as u8 > 63 {
+                            break;
+                        }
+
+                        let display_px = &mut self.display[(y as usize + i)][(x as usize + j)];
                         //set vf on collide
                         if *display_px == 1 && sprite_px == 1 {
                             self.registers[0xf] = 1;
