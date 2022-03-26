@@ -2,4 +2,4 @@
 //! See the documentation for the [`Interpreter`][Interpreter] trait to get started.
 
 mod interpreter;
-pub use {interpreter::Display, interpreter::Interpreter, interpreter::Keys};
+pub use {interpreter::run, interpreter::Display, interpreter::Interpreter, interpreter::Keys};

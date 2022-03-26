@@ -7,10 +7,10 @@ fn main() {
     let cli = Cli::parse();
 
     let filename: &str = &cli.rom;
-    let cpu = interpreter_impl::Cpu::new(700)
+    let cpu = interpreter_impl::VM::new(700)
         .load(filename)
         .unwrap_or_else(|_| panic!("Could not load ROM: {}", filename));
-    interpreter::Interpreter::run(cpu);
+    interpreter::run(cpu);
 }
 
 #[derive(Parser)]

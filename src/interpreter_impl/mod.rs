@@ -8,7 +8,7 @@ use instruction::{decode, Instruction};
 use rand::random;
 use std::time::Duration;
 
-pub struct Cpu {
+pub struct VM {
     memory: [u8; 4096],
     pc: u16,
     index: u16,
@@ -22,7 +22,7 @@ pub struct Cpu {
     display: [[u8; 64]; 32],
 }
 
-impl crate::interpreter::Interpreter for Cpu {
+impl crate::interpreter::Interpreter for VM {
     //this should execute in the time 1/speed
     fn step(&mut self, keys: &Keys) -> Option<Display> {
         let opcode = self.fetch();
@@ -48,14 +48,14 @@ impl crate::interpreter::Interpreter for Cpu {
     }
 }
 
-impl Cpu {
+impl VM {
     pub fn new(speed: u32) -> Self {
         let mut memory = [0_u8; 4096];
 
         //font is 80 bytes, should lie at 0x50
         memory[0x50..(0x50 + 80)].copy_from_slice(&font::FONT);
 
-        Cpu {
+        VM {
             memory: [0; 4096],
             pc: 0,
             index: 0,
