@@ -136,81 +136,81 @@ impl VM {
                 }
                 return Some(self.display);
             }
-            Instruction::Ske(r, byte) => {
-                if self.registers[r as usize] == byte {
+            Instruction::Ske(x, byte) => {
+                if self.registers[x as usize] == byte {
                     self.inc_pc();
                 }
             }
-            Instruction::Skne(r, byte) => {
-                if self.registers[r as usize] != byte {
+            Instruction::Skne(x, byte) => {
+                if self.registers[x as usize] != byte {
                     self.inc_pc();
                 }
             }
-            Instruction::Skre(r1, r2) => {
-                if self.registers[r1 as usize] == self.registers[r2 as usize] {
+            Instruction::Skre(x, y) => {
+                if self.registers[x as usize] == self.registers[y as usize] {
                     self.inc_pc();
                 }
             }
-            Instruction::Move(r1, r2) => self.registers[r1 as usize] = self.registers[r2 as usize],
-            Instruction::Or(r1, r2) => self.registers[r1 as usize] |= self.registers[r2 as usize],
-            Instruction::And(r1, r2) => self.registers[r1 as usize] &= self.registers[r2 as usize],
-            Instruction::Xor(r1, r2) => self.registers[r1 as usize] ^= self.registers[r2 as usize],
-            Instruction::Add(r1, r2) => {
+            Instruction::Move(x, y) => self.registers[x as usize] = self.registers[y as usize],
+            Instruction::Or(x, y) => self.registers[x as usize] |= self.registers[y as usize],
+            Instruction::And(x, y) => self.registers[x as usize] &= self.registers[y as usize],
+            Instruction::Xor(x, y) => self.registers[x as usize] ^= self.registers[y as usize],
+            Instruction::Add(x, y) => {
                 let (result, overflow) =
-                    self.registers[r1 as usize].overflowing_add(self.registers[r2 as usize]);
-                self.registers[r1 as usize] = result;
+                    self.registers[x as usize].overflowing_add(self.registers[y as usize]);
+                self.registers[x as usize] = result;
                 self.registers[0xf] = overflow.into();
             }
-            Instruction::Sub(r1, r2) => {
+            Instruction::Sub(x, y) => {
                 let (result, overflow) =
-                    self.registers[r1 as usize].overflowing_sub(self.registers[r2 as usize]);
-                self.registers[r1 as usize] = result;
+                    self.registers[x as usize].overflowing_sub(self.registers[y as usize]);
+                self.registers[x as usize] = result;
                 self.registers[0xf] = overflow.into();
             }
-            Instruction::Shr(r1, _) => {
-                //r2 is ignored
-                self.registers[0xf] = 1 & self.registers[r1 as usize];
-                self.registers[r1 as usize] >>= 1;
+            Instruction::Shr(x, _) => {
+                //y is ignored
+                self.registers[0xf] = 1 & self.registers[x as usize];
+                self.registers[x as usize] >>= 1;
             }
-            Instruction::Ssub(r1, r2) => {
+            Instruction::Ssub(x, y) => {
                 let (result, overflow) =
-                    self.registers[r2 as usize].overflowing_sub(self.registers[r1 as usize]);
-                self.registers[r1 as usize] = result;
+                    self.registers[y as usize].overflowing_sub(self.registers[x as usize]);
+                self.registers[x as usize] = result;
                 self.registers[0xf] = overflow.into();
             }
-            Instruction::Shl(r1, _) => {
-                //r2 is ignored
-                self.registers[0xf] = 0x80 & &self.registers[r1 as usize];
-                self.registers[r1 as usize] <<= 1;
+            Instruction::Shl(x, _) => {
+                //y is ignored
+                self.registers[0xf] = 0x80 & &self.registers[x as usize];
+                self.registers[x as usize] <<= 1;
             }
-            Instruction::Skrne(r1, r2) => {
-                if self.registers[r1 as usize] != self.registers[r2 as usize] {
+            Instruction::Skrne(x, r2) => {
+                if self.registers[x as usize] != self.registers[r2 as usize] {
                     self.inc_pc();
                 }
             }
             Instruction::Jumpi(nnn) => self.pc = (nnn + self.registers[0] as u16) & 0xfff, //u12 wrap
-            Instruction::Rand(r, byte) => self.registers[r as usize] = random::<u8>() & byte,
-            Instruction::Skp(r) => {
-                if keys[self.registers[r as usize] as usize] {
+            Instruction::Rand(x, byte) => self.registers[x as usize] = random::<u8>() & byte,
+            Instruction::Skp(x) => {
+                if keys[self.registers[x as usize] as usize] {
                     self.inc_pc()
                 }
             }
-            Instruction::Sknp(r) => {
-                if !keys[self.registers[r as usize] as usize] {
+            Instruction::Sknp(x) => {
+                if !keys[self.registers[x as usize] as usize] {
                     self.inc_pc()
                 }
             }
-            Instruction::Moved(r) => self.registers[r as usize] = self.delay_timer,
-            Instruction::Key(r) => {
+            Instruction::Moved(x) => self.registers[x as usize] = self.delay_timer,
+            Instruction::Key(x) => {
                 //waiting is implemented by just re-running the instruction until a keypress is detected
                 //might be bad if run at slower speeds
-                dbg!(&r, &self.registers[r as usize]);
+
                 //if no keys held
                 if keys.iter().all(|k| !k) {
                     self.pc -= 2
                 } else {
-                    //at least one key is pressed, so get the first one from the array thats held down
-                    self.registers[r as usize] = keys
+                    //at least one key is pressed, so get the index of the first one from the array thats held down
+                    self.registers[x as usize] = keys
                         .iter()
                         .enumerate()
                         .filter_map(|(k, b)| if *b { Some(k) } else { None })
@@ -219,32 +219,32 @@ impl VM {
                 }
                 dbg!(&keys);
             }
-            Instruction::Setrd(r) => self.delay_timer = self.registers[r as usize],
-            Instruction::Setrs(r) => self.sound_timer = self.registers[r as usize],
-            Instruction::Addi(r) => {
+            Instruction::Setrd(x) => self.delay_timer = self.registers[x as usize],
+            Instruction::Setrs(x) => self.sound_timer = self.registers[x as usize],
+            Instruction::Addi(x) => {
                 //weird wrapping arithmetic, u16+u8 but has to wrap to a u12
-                self.index = (self.index + (self.registers[r as usize] as u16)) & 0xfff;
+                self.index = (self.index + (self.registers[x as usize] as u16)) & 0xfff;
             }
-            Instruction::Ldfnt(r) => {
+            Instruction::Ldfnt(x) => {
                 //font starts at 0x50 in memory
-                let char_offset = self.registers[r as usize] as u16 * 5;
+                let char_offset = self.registers[x as usize] as u16 * 5;
                 self.index = 0x50 + char_offset;
             }
-            Instruction::Bcd(r) => {
+            Instruction::Bcd(x) => {
                 let slice = &mut self.memory[(self.index as usize)..(self.index as usize + 3)];
                 //binary encoded decimal conversion
-                let val = self.registers[r as usize];
+                let val = self.registers[x as usize];
                 slice[0] = val / 100;
                 slice[1] = val % 100 / 10;
                 slice[2] = val % 10;
             }
-            Instruction::Store(r) => {
-                for reg in 0..=r as usize {
+            Instruction::Store(x) => {
+                for reg in 0..=x as usize {
                     self.memory[self.index as usize + reg] = self.registers[reg];
                 }
             }
-            Instruction::Load(r) => {
-                for reg in 0..=r as usize {
+            Instruction::Load(y) => {
+                for reg in 0..=y as usize {
                     self.registers[reg] = self.memory[self.index as usize + reg];
                 }
             }
