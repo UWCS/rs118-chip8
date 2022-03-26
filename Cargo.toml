@@ -1,5 +1,5 @@
 [package]
-name = "RS118-CHIP8"
+name = "rs118-chip8"
 version = "0.1.0"
 edition = "2021"
 authors = ["Joey Harrison <joeyh021@icloud.com>"]
