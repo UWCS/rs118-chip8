@@ -3,19 +3,6 @@
 version = 3
 
 [[package]]
-name = "RS118-CHIP8"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "clap",
- "crossbeam",
- "pixels",
- "rand",
- "winit",
- "winit_input_helper",
-]
-
-[[package]]
 name = "ahash"
 version = "0.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1088,6 +1075,19 @@ name = "renderdoc-sys"
 version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f1382d1f0a252c4bf97dc20d979a2fdd05b024acd7c2ed0f7595d7817666a157"
+
+[[package]]
+name = "rs118-chip8"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "crossbeam",
+ "pixels",
+ "rand",
+ "winit",
+ "winit_input_helper",
+]
 
 [[package]]
 name = "rustc-hash"
