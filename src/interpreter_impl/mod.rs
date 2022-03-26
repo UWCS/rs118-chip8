@@ -106,7 +106,7 @@ impl VM {
             Instruction::Loadr(r, byte) => {
                 self.registers[r as usize] = byte;
             }
-            Instruction::Add(r, byte) => {
+            Instruction::Addr(r, byte) => {
                 self.registers[r as usize] = self.registers[r as usize].wrapping_add(byte)
             }
             Instruction::Loadi(nnn) => {
@@ -151,7 +151,7 @@ impl VM {
             Instruction::Or(r1, r2) => self.registers[r1 as usize] |= self.registers[r2 as usize],
             Instruction::And(r1, r2) => self.registers[r1 as usize] &= self.registers[r2 as usize],
             Instruction::Xor(r1, r2) => self.registers[r1 as usize] ^= self.registers[r2 as usize],
-            Instruction::Addr(r1, r2) => {
+            Instruction::Add(r1, r2) => {
                 let (result, overflow) =
                     self.registers[r1 as usize].overflowing_add(self.registers[r2 as usize]);
                 self.registers[r1 as usize] = result;

@@ -13,12 +13,12 @@ pub enum Instruction {
     Skne(Reg, u8),      //4xkk, skip the next instruction if Vx != kk
     Skre(Reg, Reg),     //5xy0, skip the next instruction if Vx == Vy
     Loadr(Reg, u8),     //6xkk, put value kk in register x
-    Add(Reg, u8),       //7xkk, Adds the value kk to the value of register Vx
+    Addr(Reg, u8),      //7xkk, Adds the value kk to the value of register Vx
     Move(Reg, Reg),     //8xy0, Vx = Vy,
     Or(Reg, Reg),       //8xy1, Vx = Vx OR Vy
     And(Reg, Reg),      //8xy2, Vx = Vx AND Vy
     Xor(Reg, Reg),      //8xy3, Vx = Vx XOR Vy
-    Addr(Reg, Reg),     //8xy4, Vx = Vx + Vy
+    Add(Reg, Reg),      //8xy4, Vx = Vx + Vy
     Sub(Reg, Reg),      //8xy5, Vx = Vx - Vy
     Shr(Reg, Reg),      //8xy6, Vx = Vy >> 1
     Ssub(Reg, Reg),     //8xy7 Vx = Vy - Vx
@@ -60,12 +60,12 @@ pub fn decode(opcode: u16) -> Instruction {
         (4, x, _, _) => Skne(x, kk),
         (5, x, y, 0) => Skre(x, y),
         (6, x, _, _) => Loadr(x, kk),
-        (7, x, _, _) => Add(x, kk),
+        (7, x, _, _) => Addr(x, kk),
         (8, x, y, 0) => Move(x, y),
         (8, x, y, 1) => Or(x, y),
         (8, x, y, 2) => And(x, y),
         (8, x, y, 3) => Xor(x, y),
-        (8, x, y, 4) => Addr(x, y),
+        (8, x, y, 4) => Add(x, y),
         (8, x, y, 5) => Sub(x, y),
         (8, x, y, 6) => Shr(x, y),
         (8, x, y, 7) => Ssub(x, y),
