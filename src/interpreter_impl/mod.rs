@@ -2,7 +2,7 @@ mod font;
 mod instruction;
 mod test;
 
-use crate::cpu::{Display, Keys};
+use crate::interpreter::{Display, Keys};
 use anyhow::Result;
 use instruction::{decode, Instruction};
 use rand::random;
@@ -22,7 +22,7 @@ pub struct Cpu {
     display: [[u8; 64]; 32],
 }
 
-impl crate::cpu::Cpu for Cpu {
+impl crate::interpreter::Interpreter for Cpu {
     //this should execute in the time 1/speed
     fn step(&mut self, keys: &Keys) -> Option<Display> {
         let opcode = self.fetch();

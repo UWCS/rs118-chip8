@@ -1,5 +1,5 @@
-mod cpu;
-mod cpu_impl;
+mod interpreter;
+mod interpreter_impl;
 
 use clap::Parser;
 
@@ -7,10 +7,10 @@ fn main() {
     let cli = Cli::parse();
 
     let filename: &str = &cli.rom;
-    let cpu = cpu_impl::Cpu::new(700)
+    let cpu = interpreter_impl::Cpu::new(700)
         .load(filename)
         .unwrap_or_else(|_| panic!("Could not load ROM: {}", filename));
-    cpu::Cpu::run(cpu);
+    interpreter::Interpreter::run(cpu);
 }
 
 #[derive(Parser)]
