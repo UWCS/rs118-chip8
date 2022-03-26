@@ -42,6 +42,7 @@ impl crate::interpreter::Interpreter for VM {
     fn speed(&self) -> Duration {
         self.speed
     }
+
     fn buzzer_active(&self) -> bool {
         self.sound_timer != 0
     }
@@ -282,6 +283,7 @@ fn eightbit(n: u16) -> u8 {
 
 //helpers
 //an iterator over the bits of a byte
+//this is totally unnecessary but I thought it was neat
 struct PixIterator {
     byte: u8,
     idx: u8,
