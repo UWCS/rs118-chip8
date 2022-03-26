@@ -93,7 +93,7 @@ impl VM {
                 self.display = [[0; 64]; 32];
                 return Some(self.display);
             }
-            Instruction::Rts => {
+            Instruction::Ret => {
                 self.pc = self.stack.pop().unwrap_or(0);
             }
             Instruction::Jmp(addr) => {
@@ -103,13 +103,13 @@ impl VM {
                 self.stack.push(self.pc);
                 self.pc = addr;
             }
-            Instruction::Loadr(r, byte) => {
+            Instruction::Setr(r, byte) => {
                 self.registers[r as usize] = byte;
             }
             Instruction::Addr(r, byte) => {
                 self.registers[r as usize] = self.registers[r as usize].wrapping_add(byte)
             }
-            Instruction::Loadi(nnn) => {
+            Instruction::Seti(nnn) => {
                 self.index = nnn;
             }
             Instruction::Draw(rx, ry, n) => {
@@ -215,8 +215,8 @@ impl VM {
                 }
                 dbg!(&keys);
             }
-            Instruction::Loadd(r) => self.delay_timer = self.registers[r as usize],
-            Instruction::Loads(r) => self.sound_timer = self.registers[r as usize],
+            Instruction::Setrd(r) => self.delay_timer = self.registers[r as usize],
+            Instruction::Setrs(r) => self.sound_timer = self.registers[r as usize],
             Instruction::Addi(r) => {
                 //weird wrapping arithmetic, u16+u8 but has to wrap to a u12
                 self.index = (self.index + (self.registers[r as usize] as u16)) & 0xfff;
