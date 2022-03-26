@@ -3,7 +3,6 @@ mod instruction;
 mod test;
 
 use crate::interpreter::{Display, Keys};
-use anyhow::Result;
 use instruction::{decode, Instruction};
 use rand::random;
 use std::time::Duration;
@@ -70,7 +69,7 @@ impl VM {
         }
     }
 
-    pub fn load(mut self, filename: &str) -> Result<Self> {
+    pub fn load(mut self, filename: &str) -> std::io::Result<Self> {
         let program = std::fs::read(filename)?;
         self.memory[0x200..(0x200 + program.len())].copy_from_slice(&program);
         self.pc = 0x200;
@@ -126,7 +125,6 @@ impl VM {
                         if x + j as u8 > 63 {
                             break;
                         }
-
                         let display_px = &mut self.display[(y as usize + i)][(x as usize + j)];
                         //set vf on collide
                         if *display_px == 1 && sprite_px == 1 {
