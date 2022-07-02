@@ -4,7 +4,7 @@ Yet another CHIP-8 Interpreter in Rust, built for use in [rs118](https://joeyh.d
 
 # Usage
 
-`cargo install rs118-chip8` to install the `chip-8` executable.
+`cargo install rs118-chip8` to install the `chip8` executable. `chip8 <ROM>` will run the rom file provided.
 
 # Building your own
 
