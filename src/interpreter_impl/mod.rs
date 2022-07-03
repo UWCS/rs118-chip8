@@ -7,6 +7,7 @@ use instruction::{decode, Instruction};
 use rand::random;
 use std::time::Duration;
 
+#[derive(Debug, PartialEq, Eq)]
 pub struct VM {
     memory: [u8; 4096],
     pc: u16,
