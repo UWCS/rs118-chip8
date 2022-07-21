@@ -12,7 +12,7 @@ The `rs118-chip8` crate exports the `chip8_base` library, which you can use as a
 
 ```toml
 [dependencies]
-rs118-chip8 = "0.1.0"
+rs118-chip8 = "0.1.1"
 ```
 
 See [the CHIP-8 workshop](https://rs118.uwcs.co.uk/chip8.html) and [docs.rs](https://docs.rs/rs118-chip8/latest/chip8_base/) for details.

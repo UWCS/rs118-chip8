@@ -1072,7 +1072,7 @@ checksum = "f1382d1f0a252c4bf97dc20d979a2fdd05b024acd7c2ed0f7595d7817666a157"
 
 [[package]]
 name = "rs118-chip8"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "clap",
  "crossbeam",
