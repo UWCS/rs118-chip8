@@ -125,6 +125,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fd16c4719339c4530435d38e511904438d07cce7950afa3718a84ac36c10e89e"
 
 [[package]]
+name = "chip8_base"
+version = "0.2.0"
+dependencies = [
+ "crossbeam",
+ "pixels",
+ "winit",
+ "winit_input_helper",
+]
+
+[[package]]
 name = "clap"
 version = "3.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1072,14 +1082,11 @@ checksum = "f1382d1f0a252c4bf97dc20d979a2fdd05b024acd7c2ed0f7595d7817666a157"
 
 [[package]]
 name = "rs118-chip8"
-version = "0.1.1"
+version = "0.2.0"
 dependencies = [
+ "chip8_base",
  "clap",
- "crossbeam",
- "pixels",
  "rand",
- "winit",
- "winit_input_helper",
 ]
 
 [[package]]

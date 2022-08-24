@@ -1,26 +1,4 @@
-[package]
-name = "rs118-chip8"
-version = "0.1.1"
-edition = "2021"
-authors = ["Joey Harrison <joeyh021@icloud.com>"]
-repository = "https://github.com/uwcs/rs118-chip8"
-homepage = "https://rs118.uwcs.co.uk"
-readme = "README.md"
-license = "MIT"
-description = "Yet another CHIP-8 interpreter, built for use in RS118."
+[workspace]
+resolver = "2"
 
-[dependencies]
-pixels = "0.9.0"
-winit = "0.26"
-winit_input_helper = "0.11"
-rand = "0.8.5"
-crossbeam = "0.8.1"
-clap = { version = "3.1.6", features = ["cargo", "derive"] }
-
-[lib]
-name = "chip8_base"
-path = "src/lib.rs"
-
-[[bin]]
-name = "chip8"
-path = "src/main.rs"
+members = ["chip8", "chip8-base"]

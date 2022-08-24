@@ -2,7 +2,7 @@ mod font;
 mod instruction;
 mod test;
 
-use crate::interpreter::{Display, Keys};
+use chip8_base::{Display, Keys};
 use instruction::{decode, Instruction};
 use rand::random;
 use std::time::Duration;
@@ -22,7 +22,7 @@ pub struct VM {
     display: [[u8; 64]; 32],
 }
 
-impl crate::interpreter::Interpreter for VM {
+impl chip8_base::Interpreter for VM {
     //this should execute in the time 1/speed
     fn step(&mut self, keys: &Keys) -> Option<Display> {
         let opcode = self.fetch();
