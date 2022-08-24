@@ -77,8 +77,11 @@ where
                 buzzer.store(interpreter.buzzer_active());
 
                 //sleep to make time steps uniform
-                if let Some(sleepy_time) = interpreter.speed().checked_sub(Instant::now() - t0) {
+                let delta = Instant::now() - t0;
+                if let Some(sleepy_time) = interpreter.speed().checked_sub(delta) {
                     thread::sleep(sleepy_time);
+                } else {
+                    println!("Instruction took {:?} too long! (time: {:?})", delta.saturating_sub(interpreter.speed()), delta);
                 }
             }
         }
