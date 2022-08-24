@@ -1,5 +1,6 @@
 mod display;
 mod input;
+pub(crate) mod sound;
 
 use crossbeam::atomic::AtomicCell;
 use crossbeam::sync::WaitGroup;
@@ -10,6 +11,8 @@ use std::time::{Duration, Instant};
 use winit::event::{Event, VirtualKeyCode};
 use winit::event_loop::ControlFlow;
 use winit_input_helper::WinitInputHelper;
+
+use self::sound::Buzzer;
 
 /// The Interpreter's representation of the CHIP-8 display.
 /// The display is 64x32 pixels, each pixel being either on or off, represented by a `0` or `1`, respectively.
@@ -51,6 +54,8 @@ where
     //include a flag so we know if the current frame has been drawn, to avoid drawing it twice
     let display = Arc::new(AtomicCell::new(([[0; 64]; 32], false)));
     let keys = Arc::new(AtomicCell::new([false; 16]));
+    let buzzer = Arc::new(AtomicCell::new(false));
+    let actual_buzzer = Buzzer::new();
 
     //used so CPU doesnt start until display is ready
     //cant start CPU after display because display has to be on the main thread and blocks it
@@ -60,6 +65,7 @@ where
         let wg = wg.clone();
         let display = display.clone();
         let keys = keys.clone();
+        let buzzer = buzzer.clone();
         move || {
             wg.wait();
             loop {
@@ -68,6 +74,7 @@ where
                 if let Some(update) = interpreter.step(&keys.load()) {
                     display.store((update, false));
                 }
+                buzzer.store(interpreter.buzzer_active());
 
                 //sleep to make time steps uniform
                 if let Some(sleepy_time) = interpreter.speed().checked_sub(Instant::now() - t0) {
@@ -92,6 +99,14 @@ where
                 return;
             }
         }
+
+        let buz = buzzer.load();
+        if buz {
+            actual_buzzer.on();
+        } else {
+            actual_buzzer.off();
+        }
+
 
         // Handle input events
         if input.update(&event) {
