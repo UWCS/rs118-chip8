@@ -2,7 +2,10 @@ mod font;
 mod instruction;
 mod test;
 
-use chip8_base::{Display, Keys};
+use chip8_base::{
+    Display, Keys,
+    Pixel::{self, *},
+};
 use instruction::{decode, Instruction};
 use rand::random;
 use std::time::Duration;
@@ -19,7 +22,7 @@ pub struct VM {
     speed: Duration,
     ticker: u32,
     max_ticks: u32,
-    display: [[u8; 64]; 32],
+    display: [[Pixel; 64]; 32],
 }
 
 impl chip8_base::Interpreter for VM {
@@ -67,7 +70,7 @@ impl VM {
             speed: Duration::from_secs_f64(1_f64 / speed as f64),
             ticker: 0,
             max_ticks: (speed as f64 / 60_f64).round() as u32,
-            display: [[0; 64]; 32],
+            display: [[Pixel::default(); 64]; 32],
         }
     }
 
@@ -91,7 +94,7 @@ impl VM {
         match instruction {
             Instruction::Nop => (),
             Instruction::Cls => {
-                self.display = [[0; 64]; 32];
+                self.display = [[Black; 64]; 32];
                 return Some(self.display);
             }
             Instruction::Ret => {
@@ -129,11 +132,16 @@ impl VM {
                         }
                         let display_px = &mut self.display[(y as usize + i)][(x as usize + j)];
                         //set vf on collide
-                        if *display_px == 1 && sprite_px == 1 {
+                        if *display_px as Pixel == Black && sprite_px == 1 {
                             self.registers[0xf] = 1;
                         }
                         //xor onto display
-                        *display_px ^= sprite_px;
+                        let px_u8 = *display_px as u8 ^ sprite_px;
+                        *display_px = match px_u8 {
+                            0 => Black,
+                            1 => White,
+                            _ => unreachable!(),
+                        }
                     }
                 }
                 return Some(self.display);

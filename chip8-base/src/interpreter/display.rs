@@ -29,14 +29,13 @@ pub fn init() -> Option<(EventLoop<()>, Window, Pixels)> {
     Some((event_loop, window, pixels))
 }
 
-pub fn update(pixels: &mut Pixels, buffer: &[[u8; 64]; 32]) {
+pub fn update(pixels: &mut Pixels, buffer: &[[crate::Pixel; 64]; 32]) {
     let mut old_buf = pixels.get_frame();
     for px in buffer.concat() {
         old_buf
             .write_all(match px {
-                0 => &[0_u8, 0_u8, 0_u8, 255_u8],
-                1 => &[255_u8, 255_u8, 255_u8, 255_u8],
-                _ => unreachable!(),
+                crate::Pixel::Black => &[0_u8, 0_u8, 0_u8, 255_u8],
+                crate::Pixel::White => &[255_u8, 255_u8, 255_u8, 255_u8],
             })
             .expect("Could not update Pixels buffer");
     }
