@@ -133,7 +133,7 @@ impl VM {
                         let display_px = &mut self.display[(y as usize + i)][(x as usize + j)];
 
                         //set vf high on collide
-                        if (!*display_px & sprite_px).into() {
+                        if (*display_px & sprite_px).into() {
                             self.registers[0xf] = 1;
                         }
 
