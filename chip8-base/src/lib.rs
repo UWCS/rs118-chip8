@@ -2,14 +2,10 @@
 //! See the documentation for the [`Interpreter`][Interpreter] trait to get started.
 
 mod interpreter;
+mod pixel;
 
-/// CHIP-8 displays are black and white, so each pixel can be in only one of two states.
-#[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
-pub enum Pixel {
-    #[default]
-    Black = 0,
-    White = 1,
-}
+pub use interpreter::run;
+pub use pixel::Pixel;
 
 /// The Interpreter's representation of the CHIP-8 display.
 /// The display is 64x32 pixels, each pixel being either Black or White.
@@ -37,5 +33,3 @@ pub trait Interpreter {
     /// Indicates if the sound buzzer is currently active, such that the interpreter can handle sound accordingly.
     fn buzzer_active(&self) -> bool;
 }
-
-pub use interpreter::run;

@@ -131,17 +131,14 @@ impl VM {
                             break;
                         }
                         let display_px = &mut self.display[(y as usize + i)][(x as usize + j)];
-                        //set vf on collide
-                        if *display_px as Pixel == Black && sprite_px == 1 {
+
+                        //set vf high on collide
+                        if (!*display_px & sprite_px).into() {
                             self.registers[0xf] = 1;
                         }
+
                         //xor onto display
-                        let px_u8 = *display_px as u8 ^ sprite_px;
-                        *display_px = match px_u8 {
-                            0 => Black,
-                            1 => White,
-                            _ => unreachable!(),
-                        }
+                        *display_px ^= sprite_px;
                     }
                 }
                 return Some(self.display);
@@ -291,7 +288,7 @@ fn eightbit(n: u16) -> u8 {
 }
 
 //helpers
-//an iterator over the bits of a byte
+//an iterator over the bits of a byte, as pixels
 //this is totally unnecessary but I thought it was neat
 struct PixIterator {
     byte: u8,
@@ -308,14 +305,14 @@ impl PixIterator {
 }
 
 impl Iterator for PixIterator {
-    type Item = u8;
+    type Item = Pixel;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.idx < 8 {
             let bit = self.byte >> (7 - self.idx) & 1;
             self.idx += 1;
             assert!(bit == 1 || bit == 0);
-            Some(bit)
+            Some(bit.try_into().unwrap()) //safe to unwrap because we assert
         } else {
             None
         }
