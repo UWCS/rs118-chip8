@@ -4,6 +4,7 @@ use std::{
 };
 
 /// CHIP-8 displays are black and white, so each pixel can be in only one of two states.
+/// This type has bitwise operators and conversion traits defined to make it easy to work with.
 #[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
 pub enum Pixel {
     #[default]
