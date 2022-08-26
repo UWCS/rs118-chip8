@@ -1,10 +1,12 @@
 mod display;
 mod input;
+mod sound;
 
 use crate::*;
 use crossbeam::atomic::AtomicCell;
 use crossbeam::sync::WaitGroup;
 use std::error::Error;
+use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::thread;
 use std::time::Instant;
@@ -26,6 +28,12 @@ where
     let frame_buffer = Arc::new(AtomicCell::new(([[Pixel::default(); 64]; 32], false)));
     let input_buffer = Arc::new(AtomicCell::new([false; 16]));
 
+    //init the buzzer
+    //as long as this is done first, we dont need to wait for it
+    let buzzer = sound::Buzzer::init()
+        .map_err(|err| eprintln!("Could not initalise sound: {err}, continuing with no buzzer"))
+        .unwrap();
+
     //used so CPU doesnt start until display is ready
     //cant start CPU after display because display has to be on the main thread and blocks it
     let wg = WaitGroup::new();
@@ -45,6 +53,11 @@ where
                 if let Some(update) = interpreter.step(&input_buffer.load()) {
                     frame_buffer.store((update, false));
                 }
+
+                //handle sound
+                buzzer
+                    .switch
+                    .store(interpreter.buzzer_active(), Ordering::Relaxed);
 
                 //sleep to make time steps uniform
                 if let Some(sleepy_time) = interpreter.speed().checked_sub(Instant::now() - t0) {
