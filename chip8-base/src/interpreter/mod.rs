@@ -2,7 +2,8 @@ mod display;
 mod input;
 mod sound;
 
-use crate::*;
+use crate::{Interpreter, Pixel};
+use anyhow::Context;
 use crossbeam::atomic::AtomicCell;
 use crossbeam::sync::WaitGroup;
 use std::error::Error;
@@ -20,19 +21,22 @@ pub fn run<I>(mut interpreter: I) -> !
 where
     I: Interpreter + Send + 'static,
 {
-    let (event_loop, window, mut pixels) = display::init().expect("Could not initialise display");
+    //init display subsystem
+    let (event_loop, window, mut pixels) = display::init()
+        .context("Could not initialise display subsystem.")
+        .unwrap(); //failure to init display is fatal, so panic.
 
+    //init input subsystem
     let mut input = WinitInputHelper::new();
+
+    //init sound subsystem
+    let buzzer = sound::Buzzer::init()
+        .context("Could not initalise sound")
+        .unwrap();
 
     //include a flag so we know if the current frame has been drawn, to avoid drawing it twice
     let frame_buffer = Arc::new(AtomicCell::new(([[Pixel::default(); 64]; 32], false)));
     let input_buffer = Arc::new(AtomicCell::new([false; 16]));
-
-    //init the buzzer
-    //as long as this is done first, we dont need to wait for it
-    let buzzer = sound::Buzzer::init()
-        .map_err(|err| eprintln!("Could not initalise sound: {err}, continuing with no buzzer"))
-        .unwrap();
 
     //used so CPU doesnt start until display is ready
     //cant start CPU after display because display has to be on the main thread and blocks it
@@ -76,7 +80,9 @@ where
 
         //only redraw if there was an update
         if !new_frame.1 {
-            display::update(&mut pixels, &new_frame.0);
+            display::update(&mut pixels, &new_frame.0)
+                .context("Failed to update display")
+                .unwrap(); //panic if failed to update display for whatever reason
         }
 
         //if the OS requested a redraw of the window

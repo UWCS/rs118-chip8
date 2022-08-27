@@ -1,5 +1,6 @@
 //based on https://github.com/RustAudio/cpal/blob/1ac8f1549f41001acd0acef2be9214ab72e61d11/examples/beep.rs
 
+use anyhow::{anyhow, Context};
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::{Sample, SampleFormat};
 use std::sync::atomic::AtomicBool;
@@ -16,20 +17,26 @@ impl Buzzer {
     pub fn init() -> anyhow::Result<Self> {
         //default audio host and output device
         let host = cpal::default_host();
-        let device = host.default_output_device().unwrap();
+        let device = host
+            .default_output_device()
+            .ok_or_else(|| anyhow!("Audio device initalisation error"))
+            .context("Could not get default audio device")?;
 
         //get the first audio config
-        let config = device.default_output_config().unwrap();
+        let config = device
+            .default_output_config()
+            .context("Could not get default audio device")?;
 
         let switch = Arc::<AtomicBool>::default();
 
         //run audio stream
         //starts it's own background thread
         let stream = match config.sample_format() {
-            SampleFormat::F32 => start::<f32>(&device, &config.into(), switch.clone()).unwrap(),
-            SampleFormat::I16 => start::<i16>(&device, &config.into(), switch.clone()).unwrap(),
-            SampleFormat::U16 => start::<u16>(&device, &config.into(), switch.clone()).unwrap(),
-        };
+            SampleFormat::F32 => start::<f32>(&device, &config.into(), switch.clone()),
+            SampleFormat::I16 => start::<i16>(&device, &config.into(), switch.clone()),
+            SampleFormat::U16 => start::<u16>(&device, &config.into(), switch.clone()),
+        }
+        .context("Could not start audio stream")?;
 
         Ok(Buzzer {
             switch,
@@ -72,9 +79,13 @@ where
         }
     };
 
-    let stream = device.build_output_stream(config, data_fn, err_fn)?;
+    let stream = device
+        .build_output_stream(config, data_fn, err_fn)
+        .context("Could not build audio output stream")?;
 
-    stream.play()?;
+    stream
+        .play()
+        .context("Could not start audio output stream")?;
 
     Ok(stream)
 }
