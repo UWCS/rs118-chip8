@@ -3,6 +3,7 @@ mod interpreter;
 use clap::Parser;
 
 fn main() {
+    env_logger::init();
     let cli = Cli::parse();
 
     let filename: &str = &cli.rom;

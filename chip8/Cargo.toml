@@ -13,3 +13,4 @@ description = "Yet another CHIP-8 interpreter, built for use in RS118."
 chip8_base = { path = "../chip8-base" }
 clap = { version = "3.1.6", features = ["cargo", "derive"] }
 rand = "0.8.5"
+env_logger = "*"
