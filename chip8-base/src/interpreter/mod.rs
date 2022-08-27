@@ -22,17 +22,14 @@ where
     I: Interpreter + Send + 'static,
 {
     //init display subsystem
+    log::info!("Initalising display components...");
     let (event_loop, window, mut pixels) = display::init()
         .context("Could not initialise display subsystem.")
         .unwrap(); //failure to init display is fatal, so panic.
 
     //init input subsystem
+    log::info!("Initalising input components...");
     let mut input = WinitInputHelper::new();
-
-    //init sound subsystem
-    let buzzer = sound::Buzzer::init()
-        .context("Could not initalise sound")
-        .unwrap();
 
     //include a flag so we know if the current frame has been drawn, to avoid drawing it twice
     let frame_buffer = Arc::new(AtomicCell::new(([[Pixel::default(); 64]; 32], false)));
@@ -50,6 +47,15 @@ where
 
         //start thread
         move || {
+            //init the audio on the thread because cpal::stream:  !send
+            log::info!("Initalising audio components...");
+            let buzzer = sound::Buzzer::init()
+                .map_err(|e| {
+                    log::error!("Failure in initalising audio: {e:?}. Continuing with no sound.")
+                })
+                .ok();
+
+            log::info!("Starting CPU...");
             wg.wait(); //wait until event loop ready
             loop {
                 let t0 = Instant::now();
@@ -59,22 +65,24 @@ where
                 }
 
                 //handle sound
-                buzzer
-                    .switch
-                    .store(interpreter.buzzer_active(), Ordering::Relaxed);
+                if let Some(buzzer) = &buzzer {
+                    buzzer.switch.store(false, Ordering::Relaxed);
+                }
 
                 //sleep to make time steps uniform
                 if let Some(sleepy_time) = interpreter.speed().checked_sub(Instant::now() - t0) {
                     thread::sleep(sleepy_time);
+                    log::debug!("Took {sleepy_time:?} to execute instruction")
                 } else {
-                    eprintln!("CPU clock is running slow, your interpreter is taking too long to execute instructions.")
+                    log::error!("CPU clock is running slow, your interpreter is taking too long to execute instructions.")
                 }
             }
         }
     });
 
     //event loop starts here
-    wg.wait(); //start other threads
+    wg.wait(); //start other thread
+    log::info!("Starting input & display event loop...");
     event_loop.run(move |event, _, control_flow| {
         let new_frame = frame_buffer.load();
 
@@ -88,9 +96,7 @@ where
         //if the OS requested a redraw of the window
         if let Event::RedrawRequested(_) = event {
             if let Err(e) = pixels.render() {
-                eprintln!("Pixels rendering failure, caused by: {:?}", e.source());
-                *control_flow = ControlFlow::Exit;
-                return;
+                panic!("Pixels rendering failure, caused by: {:?}", e.source());
             }
         }
 

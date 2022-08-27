@@ -16,6 +16,7 @@ winit_input_helper = "0.11"
 crossbeam = "0.8.1"
 cpal = "0.14"
 anyhow = "1"
+log = "0.4"
 
 [lib]
 name = "chip8_base"
