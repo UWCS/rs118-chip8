@@ -1,3 +1,5 @@
+[![Crates.io](https://img.shields.io/crates/d/rs118-chip8?style=flat-square)](https://crates.io/crates/rs118-chip8)
+[![docs.rs](https://img.shields.io/docsrs/chip8_base/latest?style=flat-square)](https://docs.rs/chip8_base/latest/chip8_base/)
 # RS118 CHIP-8
 
 Yet another CHIP-8 Interpreter in Rust, built for use in [rs118](https://rs118.uwcs.co.uk). Provides both a complete emulator, and a library to use a base for building your own.
