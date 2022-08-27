@@ -10,7 +10,7 @@ license = "MIT"
 description = "Yet another CHIP-8 interpreter, built for use in RS118."
 
 [dependencies]
-chip8_base = { path = "../chip8-base" }
+chip8_base = { path = "../chip8-base", version = "0.2" }
 clap = { version = "3.1.6", features = ["cargo", "derive"] }
 rand = "0.8.5"
 env_logger = "0.9"
