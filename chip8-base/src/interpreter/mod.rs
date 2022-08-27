@@ -39,7 +39,7 @@ where
     //cant start CPU after display because display has to be on the main thread and blocks it
     let wg = WaitGroup::new();
 
-    thread::spawn({
+    let handle = thread::Builder::new().name("VM Executor".to_string()).spawn({
         //make copies of what we need
         let wg = wg.clone();
         let frame_buffer = frame_buffer.clone();
@@ -81,12 +81,20 @@ where
                 }
             }
         }
-    });
+    }).context("Could not start VM execution thread").unwrap();
 
     //event loop starts here
     wg.wait(); //start other thread
     log::info!("Starting input & display event loop...");
+
     event_loop.run(move |event, _, control_flow| {
+        //if cpu thread has exited (due to panic), exit
+        if handle.is_finished() {
+            log::error!("VM thread has exited, shutting down...");
+            *control_flow = ControlFlow::Exit;
+            return;
+        }
+
         let new_frame = frame_buffer.load();
 
         //only redraw if there was an update
