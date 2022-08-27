@@ -91,6 +91,7 @@ impl VM {
     }
 
     fn execute(&mut self, instruction: Instruction, keys: &Keys) -> Option<Display> {
+        log::debug!("Executing instruction {instruction:?}");
         match instruction {
             Instruction::Nop => (),
             Instruction::Cls => {
@@ -224,7 +225,6 @@ impl VM {
                         .next()
                         .unwrap() as u8;
                 }
-                dbg!(&keys);
             }
             Instruction::Setrd(x) => self.delay_timer = self.registers[x as usize],
             Instruction::Setrs(x) => self.sound_timer = self.registers[x as usize],

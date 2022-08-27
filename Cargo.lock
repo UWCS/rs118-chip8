@@ -1445,6 +1445,7 @@ dependencies = [
  "chip8_base",
  "clap",
  "env_logger",
+ "log",
  "rand",
 ]
 
