@@ -1,0 +1,23 @@
+[package]
+name = "chip8_base"
+version = "0.2.0"
+edition = "2021"
+authors = ["Joey Harrison <joeyh021@icloud.com>"]
+repository = "https://github.com/uwcs/rs118-chip8"
+homepage = "https://rs118.uwcs.co.uk"
+readme = "README.md"
+license = "MIT"
+description = "A library providing a base for building a CHIP-8 interpreter"
+
+[dependencies]
+pixels = "0.9.0"
+winit = "0.26"
+winit_input_helper = "0.11"
+crossbeam = "0.8.1"
+cpal = "0.14"
+anyhow = "1"
+log = "0.4"
+
+[lib]
+name = "chip8_base"
+path = "src/lib.rs"

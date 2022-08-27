@@ -2,7 +2,10 @@ mod font;
 mod instruction;
 mod test;
 
-use crate::interpreter::{Display, Keys};
+use chip8_base::{
+    Display, Keys,
+    Pixel::{self, *},
+};
 use instruction::{decode, Instruction};
 use rand::random;
 use std::time::Duration;
@@ -19,10 +22,10 @@ pub struct VM {
     speed: Duration,
     ticker: u32,
     max_ticks: u32,
-    display: [[u8; 64]; 32],
+    display: [[Pixel; 64]; 32],
 }
 
-impl crate::interpreter::Interpreter for VM {
+impl chip8_base::Interpreter for VM {
     //this should execute in the time 1/speed
     fn step(&mut self, keys: &Keys) -> Option<Display> {
         let opcode = self.fetch();
@@ -67,7 +70,7 @@ impl VM {
             speed: Duration::from_secs_f64(1_f64 / speed as f64),
             ticker: 0,
             max_ticks: (speed as f64 / 60_f64).round() as u32,
-            display: [[0; 64]; 32],
+            display: [[Pixel::default(); 64]; 32],
         }
     }
 
@@ -88,10 +91,11 @@ impl VM {
     }
 
     fn execute(&mut self, instruction: Instruction, keys: &Keys) -> Option<Display> {
+        log::debug!("Executing instruction {instruction:?}");
         match instruction {
             Instruction::Nop => (),
             Instruction::Cls => {
-                self.display = [[0; 64]; 32];
+                self.display = [[Black; 64]; 32];
                 return Some(self.display);
             }
             Instruction::Ret => {
@@ -128,10 +132,12 @@ impl VM {
                             break;
                         }
                         let display_px = &mut self.display[(y as usize + i)][(x as usize + j)];
-                        //set vf on collide
-                        if *display_px == 1 && sprite_px == 1 {
+
+                        //set vf high on collide
+                        if (*display_px & sprite_px).into() {
                             self.registers[0xf] = 1;
                         }
+
                         //xor onto display
                         *display_px ^= sprite_px;
                     }
@@ -219,7 +225,6 @@ impl VM {
                         .next()
                         .unwrap() as u8;
                 }
-                dbg!(&keys);
             }
             Instruction::Setrd(x) => self.delay_timer = self.registers[x as usize],
             Instruction::Setrs(x) => self.sound_timer = self.registers[x as usize],
@@ -283,7 +288,7 @@ fn eightbit(n: u16) -> u8 {
 }
 
 //helpers
-//an iterator over the bits of a byte
+//an iterator over the bits of a byte, as pixels
 //this is totally unnecessary but I thought it was neat
 struct PixIterator {
     byte: u8,
@@ -300,14 +305,14 @@ impl PixIterator {
 }
 
 impl Iterator for PixIterator {
-    type Item = u8;
+    type Item = Pixel;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.idx < 8 {
             let bit = self.byte >> (7 - self.idx) & 1;
             self.idx += 1;
             assert!(bit == 1 || bit == 0);
-            Some(bit)
+            Some(bit.try_into().unwrap()) //safe to unwrap because we assert
         } else {
             None
         }

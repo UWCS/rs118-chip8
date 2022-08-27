@@ -1,16 +1,16 @@
 mod interpreter;
-mod interpreter_impl;
 
 use clap::Parser;
 
 fn main() {
+    env_logger::init();
     let cli = Cli::parse();
 
     let filename: &str = &cli.rom;
-    let cpu = interpreter_impl::VM::new(700)
+    let cpu = interpreter::VM::new(700)
         .load(filename)
         .unwrap_or_else(|_| panic!("Could not load ROM: {}", filename));
-    interpreter::run(cpu);
+    chip8_base::run(cpu);
 }
 
 #[derive(Parser)]
