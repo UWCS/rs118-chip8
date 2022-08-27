@@ -72,9 +72,12 @@ where
                 //sleep to make time steps uniform
                 if let Some(sleepy_time) = interpreter.speed().checked_sub(Instant::now() - t0) {
                     thread::sleep(sleepy_time);
-                    log::debug!("Took {sleepy_time:?} to execute instruction")
+                    log::debug!(
+                        "Took {:?} to execute instruction",
+                        interpreter.speed() - sleepy_time
+                    )
                 } else {
-                    log::error!("CPU clock is running slow, your interpreter is taking too long to execute instructions.")
+                    log::warn!("CPU clock is running slow, your interpreter is taking too long to execute instructions.")
                 }
             }
         }
