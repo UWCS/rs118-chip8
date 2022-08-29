@@ -18,3 +18,13 @@ chip8_base = "0.2"
 ```
 
 See [the CHIP-8 workshop](https://rs118.uwcs.co.uk/chip8.html) and [docs.rs](https://docs.rs/rs118-chip8/latest/chip8_base/) for details.
+
+## Known Issues
+
+If you get an panic on WSL along the lines of:
+
+```
+[wayland-client error] A handler for wl_keyboard panicked.
+```
+
+Then `apt install libxkbcommon-dev` should fix it.
