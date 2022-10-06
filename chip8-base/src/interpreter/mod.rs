@@ -66,7 +66,7 @@ where
 
                 //handle sound
                 if let Some(buzzer) = &buzzer {
-                    buzzer.switch.store(false, Ordering::Relaxed);
+                    buzzer.switch.store(interpreter.buzzer_active(), Ordering::Relaxed);
                 }
 
                 //sleep to make time steps uniform
